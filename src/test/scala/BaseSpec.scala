@@ -62,7 +62,7 @@ object Tests {
       assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
     } @@ timeout(10.seconds)
   )
-  val delSuite = suite("Delete")(
+  val delSuite = suite("Delete suite")(
     testM("list and delete object") {
       println(s"Using Region: ${region} and Endpoint: ${endpoint}")
       val res = for {
@@ -79,7 +79,7 @@ object Tests {
     } @@ timeout(10.seconds)
   )
 
-  val redirSuite = suite("Redirection")(
+  val redirSuite = suite("Redirection suite")(
     testM("set object redirection") {
       println(s"Using Region: ${region} and Endpoint: ${endpoint}")
       val res = for {
@@ -119,8 +119,8 @@ object Helper {
   }
 
   val aws    = new AwsLink {}
-  val key    = "original.jpg"
-  val url    = "blah177-"
+  val key    = "myPic.jpg"
+  val url    = "redirected"
   val prefix = "media/uploads/images/ee912008-2e38-11ea-89d3-45d08ddd3995/"
 
 }
