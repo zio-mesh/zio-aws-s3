@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Boris V.Kuznetsov
+ * Copyright 2019 Neurodyne Systems
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,8 @@ package zio_aws_s3
 import java.nio.file.{ Paths }
 import java.util.concurrent.CompletableFuture
 import java.net.URI
-import scala.jdk.CollectionConverters._
+// import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 
 import zio.{ IO, Task }
 import software.amazon.awssdk.regions.Region

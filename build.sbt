@@ -5,7 +5,7 @@ val awsVersion = "2.10.42"
 // Projects
 // *****************************************************************************
 
-lazy val `aws-zio-s3` =
+lazy val root =
   project
     .in(file("."))
     .enablePlugins(AutomateHeaderPlugin)
@@ -42,6 +42,7 @@ lazy val settings =
 lazy val commonSettings =
   Seq(
     // scalaVersion is taken from .travis.yml via sbt-travisci
+    name := "zio-aws-s3",
     organization := "com.neurodyne",
     organizationName := "Neurodyne Systems",
     startYear := Some(2019),
@@ -49,6 +50,7 @@ lazy val commonSettings =
     homepage := Some(url("https://github.com/Neurodyne/zio-aws-s3")),
     scalacOptions --= Seq(
       // "-Xfatal-warnings",
+      "-Ywarn-value-discard"
     ),
     Compile / unmanagedSourceDirectories := Seq((Compile / scalaSource).value),
     Test / unmanagedSourceDirectories := Seq((Test / scalaSource).value),
