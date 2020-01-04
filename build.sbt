@@ -5,7 +5,7 @@ val awsVersion = "2.10.42"
 // Projects
 // *****************************************************************************
 
-lazy val `aws-zio-s3` =
+lazy val root =
   project
     .in(file("."))
     .enablePlugins(AutomateHeaderPlugin)
@@ -42,6 +42,7 @@ lazy val settings =
 lazy val commonSettings =
   Seq(
     // scalaVersion is taken from .travis.yml via sbt-travisci
+    name := "zio-aws-s3",
     organization := "com.neurodyne",
     organizationName := "Neurodyne Systems",
     startYear := Some(2019),
