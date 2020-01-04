@@ -42,8 +42,8 @@ lazy val settings =
 lazy val commonSettings =
   Seq(
     // scalaVersion is taken from .travis.yml via sbt-travisci
-    organization := "Neurodyne Systems",
-    organizationName := "Boris V.Kuznetsov",
+    organization := "com.neurodyne",
+    organizationName := "Neurodyne Systems",
     startYear := Some(2019),
     licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0")),
     homepage := Some(url("https://github.com/Neurodyne/zio-aws-s3")),
@@ -66,7 +66,7 @@ lazy val sonatypeSettings =
     sonatypeProfileName := "com.neurodyne",
     scmInfo := Some(
       ScmInfo(
-        url("https://github.com/Neurodyne/zio-aws-s3"),
+        homepage.value.get,
         "scm:git@github.com:Neurodyne/zio-aws-s3.git"
       )
     ),
