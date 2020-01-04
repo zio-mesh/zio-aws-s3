@@ -185,6 +185,6 @@ class AwsLink extends GenericLink {
           case null => callback(IO.succeed(response))
           case ex   => callback(IO.fail(ex))
         }
-      })
+      }): Unit
   }
 }
