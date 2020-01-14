@@ -85,7 +85,9 @@ object GenericLink {
     /**
      * Setup redirection for all objects with a prefix
      */
-    def redirectObject(buck: String, prefix: String, url: String)(implicit s3: S3AsyncClient): Task[CopyObjectResponse]
+    def redirectObject(buck: String, prefix: String, key: String, url: String)(
+      implicit s3: S3AsyncClient
+    ): Task[CopyObjectResponse]
 
     /**
      * Put a file with a key into a Bucket

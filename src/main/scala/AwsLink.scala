@@ -116,28 +116,39 @@ class AwsLink extends GenericLink {
       for {
         list <- listBucketObjects(buck, prefix)
         path = prefix + "/" + key
+        _    = println(s">>>>>>>> path: ${path}")
         res = list.contents.asScala
           .filter(_.key == path)
           .nonEmpty
       } yield res
 
-    def redirectObject(buck: String, prefix: String, url: String)(
+    def redirectObject(buck: String, prefix: String, key: String, url: String)(
       implicit s3: S3AsyncClient
     ): Task[CopyObjectResponse] = {
-      val src = URLEncoder.encode(buck + "/" + prefix, StandardCharsets.UTF_8.toString)
-      val dst = URLEncoder.encode(buck + "/" + prefix + url, StandardCharsets.UTF_8.toString)
+      val src = URLEncoder.encode(buck + "/" + prefix + "/" + key, StandardCharsets.UTF_8.toString)
+      val dst = URLEncoder.encode(buck + "/" + prefix + url + "/" + key, StandardCharsets.UTF_8.toString)
+
+      println(s">>>>>> Redirecting: buck: ${buck}, pref: ${prefix}, key: ${key}, url: ${url}")
+      println(s">>>>>> Src Link: ${src}, Dst link: ${dst}")
       for {
         req <- IO.effect(
                 CopyObjectRequest
                   .builder()
-                  .copySource(src)
                   .destinationBucket(buck)
+                  .destinationKey(key)
+                  .copySource(src)
                   .websiteRedirectLocation(dst)
                   .build()
               )
+        // _ = println(req.copyobj)
+        // rsp <- IO.effect()
+        _   = println(s">>>>>>>> Req received: ${req}")
+        tmp = s3.copyObject(req)
+        _   = println(s">>>>>>>> tmp received: ${tmp}")
+
         rsp <- IO
                 .effectAsync[Throwable, CopyObjectResponse] { callback =>
-                  processResponse(s3.copyObject(req), callback)
+                  processResponse(tmp, callback)
                 }
                 .mapError(_ => new Throwable("Failed Processing CopyObjectResponse"))
       } yield rsp
@@ -154,6 +165,7 @@ class AwsLink extends GenericLink {
 
     def getObject(buck: String, key: String, file: String)(implicit s3: S3AsyncClient): Task[GetObjectResponse] =
       IO.effectAsync[Throwable, GetObjectResponse] { callback =>
+        println(">>>>>>> Inside the callback")
         processResponse(
           s3.getObject(GetObjectRequest.builder().bucket(buck).key(key).build(), Paths.get(file)),
           callback

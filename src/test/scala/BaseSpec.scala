@@ -84,7 +84,7 @@ object Tests {
       println(s"Using Region: ${region} and Endpoint: ${endpoint}")
       val res = for {
         s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        out <- aws.service.redirectObject(bucket, prefix, url)(s3)
+        out <- aws.service.redirectObject(bucket, prefix, key, url)(s3)
         _   = println(out)
       } yield out
 
@@ -119,8 +119,8 @@ object Helper {
   }
 
   val aws    = new AwsLink {}
-  val key    = "myPic.jpg"
+  val key    = "42x42.jpg"
   val url    = "redirected"
-  val prefix = "media/uploads/images/ee912008-2e38-11ea-89d3-45d08ddd3995/"
+  val prefix = "media/uploads/images/ee912008-2e38-11ea-89d3-45d08ddd3995"
 
 }
