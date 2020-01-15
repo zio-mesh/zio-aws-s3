@@ -46,7 +46,7 @@ object Tests {
       val res = for {
         s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
         out <- aws.service.lookupObject(bucket, prefix, key)(s3)
-        _   = println(out)
+        _   = println(s"Found objects: ${out}")
       } yield out
 
       assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))

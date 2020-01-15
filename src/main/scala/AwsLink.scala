@@ -109,14 +109,14 @@ class AwsLink extends GenericLink {
       for {
         list <- listBucketObjects(buck, prefix)
         keys = list.contents.asScala.map(_.key).toList
-        _    = println(keys.size)
+        _    = println(s"*** Total keys found for prefix ${prefix}: ${keys.size}")
       } yield keys
 
     def lookupObject(buck: String, prefix: String, key: String)(implicit s3: S3AsyncClient): Task[Boolean] =
       for {
         list <- listBucketObjects(buck, prefix)
         path = prefix + "/" + key
-        _    = println(s">>>>>>>> path: ${path}")
+        // _    = println(s">>>>>>>> path: ${path}")
         res = list.contents.asScala
           .filter(_.key == path)
           .nonEmpty
@@ -142,9 +142,9 @@ class AwsLink extends GenericLink {
               )
         // _ = println(req.copyobj)
         // rsp <- IO.effect()
-        _   = println(s">>>>>>>> Req received: ${req}")
+        // _   = println(s">>>>>>>> Req received: ${req}")
         tmp = s3.copyObject(req)
-        _   = println(s">>>>>>>> tmp received: ${tmp}")
+        // _   = println(s">>>>>>>> tmp received: ${tmp}")
 
         rsp <- IO
                 .effectAsync[Throwable, CopyObjectResponse] { callback =>
@@ -165,7 +165,6 @@ class AwsLink extends GenericLink {
 
     def getObject(buck: String, key: String, file: String)(implicit s3: S3AsyncClient): Task[GetObjectResponse] =
       IO.effectAsync[Throwable, GetObjectResponse] { callback =>
-        println(">>>>>>> Inside the callback")
         processResponse(
           s3.getObject(GetObjectRequest.builder().bucket(buck).key(key).build(), Paths.get(file)),
           callback
