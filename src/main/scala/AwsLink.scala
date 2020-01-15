@@ -114,20 +114,12 @@ class AwsLink extends GenericLink {
 
     def lookupObject(buck: String, prefix: String, key: String)(implicit s3: S3AsyncClient): Task[Boolean] =
       for {
-        list <- listBucketObjects(buck, prefix)
-        path = prefix + "/" + key
-        // _    = println(s">>>>>>>> path: ${path}")
+        list   <- listBucketObjects(buck, prefix)
+        newKey = prefix + "/" + key
         res = list.contents.asScala
-          .filter(_.key == path)
+          .filter(_.key == newKey)
           .nonEmpty
       } yield res
-
-    def redirectObject(buck: String, prefix: String, key: String, url: String)(
-      implicit s3: S3AsyncClient
-    ): Task[CopyObjectResponse] = {
-      val dstPrefix = prefix + "/" + url
-      copyObject(buck, prefix, dstPrefix, key, key)
-    }
 
     def redirectPack(buck: String, prefix: String, url: String)(
       implicit s3: S3AsyncClient
@@ -137,21 +129,25 @@ class AwsLink extends GenericLink {
       keys.flatMap { keyList =>
         Task.effect(keyList.foreach(key => redirectObject(buck, prefix, key, url)))
       }
-
     }
 
-    def copyObject(buck: String, srcPrefix: String, dstPrefix: String, srcKey: String, dstKey: String)(
+    def redirectObject(buck: String, prefix: String, key: String, url: String)(
+      implicit s3: S3AsyncClient
+    ): Task[CopyObjectResponse] = {
+      val dstPrefix = prefix + "/" + url
+      copyObject(buck, dstPrefix, key, key)
+    }
+
+    def copyObject(buck: String, dstPrefix: String, srcKey: String, dstKey: String)(
       implicit s3: S3AsyncClient
     ): Task[CopyObjectResponse] = {
 
-      val src = URLEncoder.encode(buck + "/" + srcPrefix + "/" + srcKey, StandardCharsets.UTF_8.toString)
-      val dst = URLEncoder.encode(buck + "/" + dstPrefix + "/" + dstKey, StandardCharsets.UTF_8.toString)
-
-      // val newKey = dstPrefix + "/" + dstKey
+      val src = URLEncoder.encode(buck + "/" + srcKey, StandardCharsets.UTF_8.toString)
+      val dst = URLEncoder.encode(buck + "/" + dstKey, StandardCharsets.UTF_8.toString)
 
       println(s">>>>>> Copy Src Link: ${src}")
       println(s">>>>>> Copy Dst link: ${dst}")
-      // println(s">>>>>> Dst Key: ${newKey}")
+      println(s">>>>>> Dst prefix: ${dstPrefix}")
 
       for {
         req <- IO.effect(
@@ -160,7 +156,7 @@ class AwsLink extends GenericLink {
                   .destinationBucket(buck)
                   .destinationKey(dstKey)
                   .copySource(src)
-                  .websiteRedirectLocation(dst)
+                  .websiteRedirectLocation("http://yandex.ru")
                   .build()
               )
         rsp <- IO

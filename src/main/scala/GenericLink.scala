@@ -99,7 +99,7 @@ object GenericLink {
     /**
      * Copy an object
      */
-    def copyObject(buck: String, srcPrefix: String, dstPrefix: String, srcKey: String, dstKey: String)(
+    def copyObject(buck: String, dstPrefix: String, srcKey: String, dstKey: String)(
       implicit s3: S3AsyncClient
     ): Task[CopyObjectResponse]
 

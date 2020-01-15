@@ -45,7 +45,7 @@ object Tests {
       println(s"Using Region: ${region} and Endpoint: ${endpoint}")
       val res = for {
         s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        out <- aws.service.lookupObject(bucket, newPrefix, key)(s3)
+        out <- aws.service.lookupObject(bucket, prefix, key)(s3)
         _   = println(s"Found objects: ${out}")
       } yield out
 
@@ -55,7 +55,7 @@ object Tests {
       println(s"Using Region: ${region}, Endpoint: ${endpoint}, Bucket: ${bucket}")
       val res = for {
         s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        out <- aws.service.listObjectsKeys(bucket, newPrefix)(s3)
+        out <- aws.service.listObjectsKeys(bucket, prefix)(s3)
         _   = println(out)
       } yield out
 
@@ -80,12 +80,21 @@ object Tests {
   )
 
   val redirSuite = suite("Redirection suite")(
-    testM("set object redirection") {
+    testM("set a single object redirection") {
       println(s"Using Region: ${region} and Endpoint: ${endpoint}")
       val res = for {
         s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        out <- aws.service.redirectObject(bucket, prefix, key, url)(s3)
+        out <- aws.service.redirectObject(bucket, prefix, fullKey, url)(s3)
         _   = println(out)
+      } yield out
+
+      assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
+    } @@ timeout(10.seconds) @@ ignore,
+    testM("set a multiple object redirection with a single prefix") {
+      println(s"Using Region: ${region} and Endpoint: ${endpoint}")
+      val res = for {
+        s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
+        out <- aws.service.redirectPack(bucket, prefix, url)(s3)
       } yield out
 
       assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
@@ -123,5 +132,6 @@ object Helper {
   val url       = "backup"
   val prefix    = "media/uploads/images/cf3a53e4-37bd-11ea-b430-6f9a089d05d1"
   val newPrefix = "media/uploads/images/cf3a53e4-37bd-11ea-b430-6f9a089d05d1/backup"
+  val fullKey   = prefix + "/" + key
 
 }
