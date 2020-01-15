@@ -90,6 +90,13 @@ object GenericLink {
     ): Task[CopyObjectResponse]
 
     /**
+     * Copy an object
+     */
+    def copyObject(buck: String, srcPrefix: String, dstPrefix: String, srcKey: String, dstKey: String)(
+      implicit s3: S3AsyncClient
+    ): Task[CopyObjectResponse]
+
+    /**
      * Put a file with a key into a Bucket
      */
     def putObject(buck: String, key: String, file: String)(implicit s3: S3AsyncClient): Task[PutObjectResponse]

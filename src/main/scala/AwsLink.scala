@@ -124,25 +124,25 @@ class AwsLink extends GenericLink {
 
     def redirectObject(buck: String, prefix: String, key: String, url: String)(
       implicit s3: S3AsyncClient
+    ): Task[CopyObjectResponse] =
+      copyObject(buck, "", "", "", "")
+
+    def copyObject(buck: String, srcPrefix: String, dstPrefix: String, srcKey: String, dstKey: String)(
+      implicit s3: S3AsyncClient
     ): Task[CopyObjectResponse] = {
 
-      // Specify a target key with update url
-      val newKey = prefix + "-" + url + "/" + key
+      val src = URLEncoder.encode(buck + "/" + srcPrefix + "/" + srcKey, StandardCharsets.UTF_8.toString)
+      val dst = URLEncoder.encode(buck + "/" + dstPrefix + "/" + dstKey, StandardCharsets.UTF_8.toString)
 
-      val src = URLEncoder.encode(buck + "/" + prefix + "/" + key, StandardCharsets.UTF_8.toString)
-      val dst = URLEncoder.encode(buck + "/" + prefix + url + "/" + key, StandardCharsets.UTF_8.toString)
-
-      println(s">>>>>> Redirecting: buck: ${buck}, pref: ${prefix}, key: ${key}, url: ${url}")
-      println(s">>>>>> Src Link: ${src}")
-      println(s">>>>>> Dst link: ${dst}")
-      println(s">>>>>> New Key : ${newKey}")
+      println(s">>>>>> Copy Src Link: ${src}")
+      println(s">>>>>> Copy Dst link: ${dst}")
 
       for {
         req <- IO.effect(
                 CopyObjectRequest
                   .builder()
                   .destinationBucket(buck)
-                  .destinationKey(newKey)
+                  .destinationKey(dstKey)
                   .copySource(src)
                   .websiteRedirectLocation(dst)
                   .build()
