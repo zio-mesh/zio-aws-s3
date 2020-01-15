@@ -45,7 +45,7 @@ object Tests {
       println(s"Using Region: ${region} and Endpoint: ${endpoint}")
       val res = for {
         s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        out <- aws.service.lookupObject(bucket, prefix, key)(s3)
+        out <- aws.service.lookupObject(bucket, newPrefix, key)(s3)
         _   = println(s"Found objects: ${out}")
       } yield out
 
@@ -55,7 +55,7 @@ object Tests {
       println(s"Using Region: ${region}, Endpoint: ${endpoint}, Bucket: ${bucket}")
       val res = for {
         s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        out <- aws.service.listObjectsKeys(bucket, prefix)(s3)
+        out <- aws.service.listObjectsKeys(bucket, newPrefix)(s3)
         _   = println(out)
       } yield out
 
@@ -122,5 +122,7 @@ object Helper {
   val key    = "42x42.jpg"
   val url    = "redirected"
   val prefix = "media/uploads/images/ee912008-2e38-11ea-89d3-45d08ddd3995"
+
+  val newPrefix = "media/uploads/images/ee912008-2e38-11ea-89d3-45d08ddd3995-redirected"
 
 }

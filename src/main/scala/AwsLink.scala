@@ -109,7 +109,7 @@ class AwsLink extends GenericLink {
       for {
         list <- listBucketObjects(buck, prefix)
         keys = list.contents.asScala.map(_.key).toList
-        _    = println(s"*** Total keys found for prefix ${prefix}: ${keys.size}")
+        _    = println(s">>>>>> Total keys found for prefix ${prefix}: ${keys.size}")
       } yield keys
 
     def lookupObject(buck: String, prefix: String, key: String)(implicit s3: S3AsyncClient): Task[Boolean] =
@@ -125,34 +125,34 @@ class AwsLink extends GenericLink {
     def redirectObject(buck: String, prefix: String, key: String, url: String)(
       implicit s3: S3AsyncClient
     ): Task[CopyObjectResponse] = {
+
+      // Specify a target key with update url
+      val newKey = prefix + "-" + url + "/" + key
+
       val src = URLEncoder.encode(buck + "/" + prefix + "/" + key, StandardCharsets.UTF_8.toString)
       val dst = URLEncoder.encode(buck + "/" + prefix + url + "/" + key, StandardCharsets.UTF_8.toString)
 
       println(s">>>>>> Redirecting: buck: ${buck}, pref: ${prefix}, key: ${key}, url: ${url}")
-      println(s">>>>>> Src Link: ${src}, Dst link: ${dst}")
+      println(s">>>>>> Src Link: ${src}")
+      println(s">>>>>> Dst link: ${dst}")
+      println(s">>>>>> New Key : ${newKey}")
+
       for {
         req <- IO.effect(
                 CopyObjectRequest
                   .builder()
                   .destinationBucket(buck)
-                  .destinationKey(key)
+                  .destinationKey(newKey)
                   .copySource(src)
                   .websiteRedirectLocation(dst)
                   .build()
               )
-        // _ = println(req.copyobj)
-        // rsp <- IO.effect()
-        // _   = println(s">>>>>>>> Req received: ${req}")
-        tmp = s3.copyObject(req)
-        // _   = println(s">>>>>>>> tmp received: ${tmp}")
-
         rsp <- IO
                 .effectAsync[Throwable, CopyObjectResponse] { callback =>
-                  processResponse(tmp, callback)
+                  processResponse(s3.copyObject(req), callback)
                 }
                 .mapError(_ => new Throwable("Failed Processing CopyObjectResponse"))
       } yield rsp
-
     }
 
     def putObject(buck: String, key: String, file: String)(implicit s3: S3AsyncClient): Task[PutObjectResponse] =
