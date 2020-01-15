@@ -83,11 +83,18 @@ object GenericLink {
     def lookupObject(buck: String, prefix: String, key: String)(implicit s3: S3AsyncClient): Task[Boolean]
 
     /**
-     * Setup redirection for all objects with a prefix
+     * Setup redirection for a single object
      */
     def redirectObject(buck: String, prefix: String, key: String, url: String)(
       implicit s3: S3AsyncClient
     ): Task[CopyObjectResponse]
+
+    /**
+     * Setup redirection for all objects with a common prefix
+     */
+    def redirectPack(buck: String, prefix: String, url: String)(
+      implicit s3: S3AsyncClient
+    ): Task[Unit]
 
     /**
      * Copy an object

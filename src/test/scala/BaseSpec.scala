@@ -118,11 +118,10 @@ object Helper {
 
   }
 
-  val aws    = new AwsLink {}
-  val key    = "42x42.jpg"
-  val url    = "redirected"
-  val prefix = "media/uploads/images/ee912008-2e38-11ea-89d3-45d08ddd3995"
-
-  val newPrefix = "media/uploads/images/ee912008-2e38-11ea-89d3-45d08ddd3995-redirected"
+  val aws       = new AwsLink {}
+  val key       = "42x42.jpg"
+  val url       = "backup"
+  val prefix    = "media/uploads/images/cf3a53e4-37bd-11ea-b430-6f9a089d05d1"
+  val newPrefix = "media/uploads/images/cf3a53e4-37bd-11ea-b430-6f9a089d05d1/backup"
 
 }
