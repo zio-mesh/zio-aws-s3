@@ -28,6 +28,7 @@ import software.amazon.awssdk.services.s3.model.{
   GetObjectResponse,
   ListBucketsResponse,
   ListObjectsV2Response,
+  PutObjectAclResponse,
   PutObjectResponse
 }
 
@@ -127,7 +128,12 @@ object GenericLink {
     /**
      * get current ACL settings
      */
-    def getAcl(buck: String, key: String)(implicit s3: S3AsyncClient): Task[GetObjectAclResponse]
+    def getObjectAcl(buck: String, key: String)(implicit s3: S3AsyncClient): Task[GetObjectAclResponse]
+
+    /**
+     * put new ACL settings
+     */
+    def putObjectAcl(buck: String, key: String)(implicit s3: S3AsyncClient): Task[PutObjectAclResponse]
 
   }
 }

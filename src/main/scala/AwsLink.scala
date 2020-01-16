@@ -126,7 +126,7 @@ class AwsLink extends GenericLink {
           .nonEmpty
       } yield res
 
-    def getAcl(buck: String, key: String)(implicit s3: S3AsyncClient): Task[GetObjectAclResponse] = {
+    def getObjectAcl(buck: String, key: String)(implicit s3: S3AsyncClient): Task[GetObjectAclResponse] = {
       val req = GetObjectAclRequest.builder.bucket(buck).key(key).build
 
       IO.effectAsync[Throwable, GetObjectAclResponse] { callback =>
@@ -135,16 +135,17 @@ class AwsLink extends GenericLink {
         .mapError(_ => new Throwable("Failed Processing CopyObjectResponse"))
     }
 
-    // def setAcl(buck: String, prefix: String, key: String)(implicit s3: S3AsyncClient): Task[Unit] = {
-    //   // val key = listObjectsKeys(buck, prefix).head
-    //   val currAcl = s3.getObjectAcl(_.bucket(buck).key(key))
-    //   val newAcl  = AccessControlPolicy.builder().owner(currAcl.owner())
-
-    //   // Task.effect(PutObjectAclResponse.builder().sdkFields().add("")
-    //   // val acl = Consumer(a => a.owner())
-    //   Task.effect(s3.putObjectAcl())
-
-    // }
+    def putObjectAcl(buck: String, key: String)(implicit s3: S3AsyncClient): Task[PutObjectAclResponse] =
+      for {
+        curr <- getObjectAcl(buck, key)
+        acl  = AccessControlPolicy.builder.grants(curr.grants).build
+        req  <- IO.effect(PutObjectAclRequest.builder().bucket(buck).key(key).accessControlPolicy(acl).build)
+        rsp <- IO
+                .effectAsync[Throwable, PutObjectAclResponse] { callback =>
+                  processResponse(s3.putObjectAcl(req), callback)
+                }
+                .mapError(_ => new Throwable("Failed Processing PutObjectAclResponse"))
+      } yield rsp
 
     def redirectPack(buck: String, prefix: String, url: String)(
       implicit s3: S3AsyncClient

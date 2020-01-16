@@ -102,11 +102,21 @@ object Tests {
   )
 
   val aclSuite = suite("ACL suite")(
-    testM("set a single object redirection") {
+    testM("get object act") {
       println(s"Using Region: ${region} and Endpoint: ${endpoint}")
       val res = for {
         s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        out <- aws.service.getAcl(bucket, fullKey)(s3)
+        out <- aws.service.getObjectAcl(bucket, fullKey)(s3)
+        _   = println(out)
+      } yield out
+
+      assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
+    } @@ timeout(10.seconds),
+    testM("set object act") {
+      println(s"Using Region: ${region} and Endpoint: ${endpoint}")
+      val res = for {
+        s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
+        out <- aws.service.putObjectAcl(bucket, fullKey)(s3)
         _   = println(out)
       } yield out
 
