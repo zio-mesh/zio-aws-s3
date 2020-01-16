@@ -135,7 +135,7 @@ class AwsLink extends GenericLink {
       implicit s3: S3AsyncClient
     ): Task[CopyObjectResponse] = {
       val dstPrefix = prefix + "/" + url
-      copyObject(buck, dstPrefix, key, key)
+      copyObject(buck, dstPrefix, key, key) // copy each object inside the same buck, but with diff indexes
     }
 
     def copyObject(buck: String, dstPrefix: String, srcKey: String, dstKey: String)(
@@ -147,7 +147,6 @@ class AwsLink extends GenericLink {
 
       println(s">>>>>> Copy Src Link: ${src}")
       println(s">>>>>> Copy Dst link: ${dst}")
-      println(s">>>>>> Dst prefix: ${dstPrefix}")
 
       for {
         req <- IO.effect(
@@ -156,7 +155,7 @@ class AwsLink extends GenericLink {
                   .destinationBucket(buck)
                   .destinationKey(dstKey)
                   .copySource(src)
-                  .websiteRedirectLocation("http://yandex.ru")
+                  .websiteRedirectLocation(dst)
                   .build()
               )
         rsp <- IO
