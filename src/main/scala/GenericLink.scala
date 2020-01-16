@@ -24,6 +24,7 @@ import software.amazon.awssdk.services.s3.model.{
   CreateBucketResponse,
   DeleteBucketResponse,
   DeleteObjectResponse,
+  GetObjectAclResponse,
   GetObjectResponse,
   ListBucketsResponse,
   ListObjectsV2Response,
@@ -122,6 +123,11 @@ object GenericLink {
      * Delete all objects
      */
     def delAllObjects(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[Unit]
+
+    /**
+     * get current ACL settings
+     */
+    def getAcl(buck: String, key: String)(implicit s3: S3AsyncClient): Task[GetObjectAclResponse]
 
   }
 }

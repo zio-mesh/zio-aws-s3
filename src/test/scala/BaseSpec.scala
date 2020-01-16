@@ -101,11 +101,24 @@ object Tests {
     } @@ timeout(10.seconds)
   )
 
+  val aclSuite = suite("ACL suite")(
+    testM("set a single object redirection") {
+      println(s"Using Region: ${region} and Endpoint: ${endpoint}")
+      val res = for {
+        s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
+        out <- aws.service.getAcl(bucket, fullKey)(s3)
+        _   = println(out)
+      } yield out
+
+      assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
+    } @@ timeout(10.seconds)
+  )
 }
 
 object BuckSpec  extends DefaultRunnableSpec(suite("Bucket Spec")(Tests.bucketsSuite))
 object ObjSpec   extends DefaultRunnableSpec(suite("Object Spec")(Tests.objectsSuite))
 object RedirSpec extends DefaultRunnableSpec(suite("Redirection Spec")(Tests.redirSuite))
+object AclSpec   extends DefaultRunnableSpec(suite("ACL Spec")(Tests.aclSuite))
 object DelSpec   extends DefaultRunnableSpec(suite("Redirection Spec")(Tests.delSuite))
 
 object Helper {

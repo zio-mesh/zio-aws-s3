@@ -25,6 +25,7 @@ import zio.{ IO, Task }
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.{
+  AccessControlPolicy,
   CopyObjectRequest,
   CopyObjectResponse,
   CreateBucketRequest,
@@ -33,11 +34,15 @@ import software.amazon.awssdk.services.s3.model.{
   DeleteBucketResponse,
   DeleteObjectRequest,
   DeleteObjectResponse,
+  GetObjectAclRequest,
+  GetObjectAclResponse,
   GetObjectRequest,
   GetObjectResponse,
   ListBucketsResponse,
   ListObjectsV2Request,
   ListObjectsV2Response,
+  PutObjectAclRequest,
+  PutObjectAclResponse,
   PutObjectRequest,
   PutObjectResponse
 }
@@ -120,6 +125,26 @@ class AwsLink extends GenericLink {
           .filter(_.key == newKey)
           .nonEmpty
       } yield res
+
+    def getAcl(buck: String, key: String)(implicit s3: S3AsyncClient): Task[GetObjectAclResponse] = {
+      val req = GetObjectAclRequest.builder.bucket(buck).key(key).build
+
+      IO.effectAsync[Throwable, GetObjectAclResponse] { callback =>
+          processResponse(s3.getObjectAcl(req), callback)
+        }
+        .mapError(_ => new Throwable("Failed Processing CopyObjectResponse"))
+    }
+
+    // def setAcl(buck: String, prefix: String, key: String)(implicit s3: S3AsyncClient): Task[Unit] = {
+    //   // val key = listObjectsKeys(buck, prefix).head
+    //   val currAcl = s3.getObjectAcl(_.bucket(buck).key(key))
+    //   val newAcl  = AccessControlPolicy.builder().owner(currAcl.owner())
+
+    //   // Task.effect(PutObjectAclResponse.builder().sdkFields().add("")
+    //   // val acl = Consumer(a => a.owner())
+    //   Task.effect(s3.putObjectAcl())
+
+    // }
 
     def redirectPack(buck: String, prefix: String, url: String)(
       implicit s3: S3AsyncClient
