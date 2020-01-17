@@ -100,7 +100,7 @@ object Tests {
     testM("get pack ACL") {
       val res = for {
         s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        out <- aws.service.getPackAcl(bucket, prefix)(s3)
+        out <- aws.service.getPackAcl(bucket, prefix0)(s3)
         _   = out.foreach(println)
       } yield out
 
@@ -114,7 +114,7 @@ object Tests {
       } yield out
 
       assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
-    } @@ timeout(10.seconds)
+    } @@ timeout(10.seconds) @@ ignore
   )
 
   val blockSuite = suite("Block suite")(
@@ -165,11 +165,11 @@ object Helper {
 
   }
 
-  val aws       = new AwsLink {}
-  val key       = "42x42.jpg"
-  val url       = "backup"
-  val prefix    = "media/uploads/images/cf3a53e4-37bd-11ea-b430-6f9a089d05d1"
-  val newPrefix = "media/uploads/images/cf3a53e4-37bd-11ea-b430-6f9a089d05d1/backup"
-  val fullKey   = prefix + "/" + key
+  val aws     = new AwsLink {}
+  val key     = "42x42.jpg"
+  val url     = "backup"
+  val prefix  = "media/uploads/images/cf3a53e4-37bd-11ea-b430-6f9a089d05d1"
+  val prefix0 = "media/uploads/images/dea5c048-37bd-11ea-8194-399b761e9b96"
+  val fullKey = prefix + "/" + key
 
 }
