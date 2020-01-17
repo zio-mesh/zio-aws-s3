@@ -50,7 +50,29 @@ import software.amazon.awssdk.services.s3.model.{
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
+sealed trait Custom {
+  type Id[A] = A
+}
+
+sealed trait Stew[F[_], A] extends Custom { self =>
+  def proc(value: A): Task[F[A]]
+}
+
+object Stew {
+  def apply[F[_], A](implicit F: Stew[F, A]): Stew[F, A] = F
+  type Id[A] = A
+
+  implicit def IdStew[A] = new Stew[Id, A] {
+    def proc(value: Id[A]): Task[Id[A]] = Task.effect(value)
+  }
+  implicit def ListStew[A] = new Stew[List, A] {
+    def proc(value: List[A]): Task[List[A]] = Task.effect(value)
+  }
+}
+
 class AwsLink extends GenericLink {
+
+  type Id[X] = X
 
   val service = new GenericLink.Service[Any] {
     def createClient(region: Region, endpoint: String): Task[S3AsyncClient] = {
@@ -154,11 +176,46 @@ class AwsLink extends GenericLink {
                 .mapError(_ => new Throwable("Failed Processing PutObjectAclResponse"))
       } yield rsp
 
-    def redirectPack(buck: String, prefix: String, url: String)(implicit s3: S3AsyncClient): Task[Unit] =
+    // trait Bif[_,_] {
+    //   def bimap[A,B,C,D] (f:A=>B), g:C=>D)
+    // }
+
+    def processPack[F[_], A](args: Seq[String], eff: (Seq[String]) => Task[A])(
+      implicit s3: S3AsyncClient
+    ): Task[F[A]] =
+      for {
+        keys <- listObjectsKeys(args(0), args(1)) // expected: buck:String, prefix:String
+        out  <- Task.traverse(keys)(key => eff(args :+ key))
+      } yield out
+
+    def processKeys[T, TT](
+      buck: String,
+      prefix: String,
+      url: String,
+      process: (String) => Task[T]
+    )(remap: List[T] => TT)(
+      implicit s3: S3AsyncClient
+    ): Task[TT] =
       for {
         keys <- listObjectsKeys(buck, prefix)
-        _    = Task.traverse(keys)(key => redirectObject(buck, prefix, key, url))
-      } yield ()
+        // res  <- Task.traverse(keys)(key => process(key))
+        res <- Task.traverse(keys)(process)
+      } yield remap(res)
+
+    // def redirectPack(buck: String, prefix: String, url: String)(implicit s3: S3AsyncClient): Task[Unit] =
+    //   for {
+    //     keys <- listObjectsKeys(buck, prefix)
+    //     _    = Task.traverse(keys)(key => redirectObject(buck, prefix, key, url))
+    //   } yield ()
+
+    // def redirectPack(buck: String, prefix: String, url: String)(implicit s3: S3AsyncClient): Task[Unit] =
+    //   processKeys(buck, prefix, url, key:String => redirectObject(buck, prefix, url, key))(_ => ())
+
+    // def eff(value:String):Task[Eff]
+
+    def redirectPack(buck: String, prefix: String, url: String)(implicit s3: S3AsyncClient): Task[Unit] =
+      // processPack[Id, Unit](Seq(buck, prefix, url), (key: String) => redirectObject(buck, prefix, key, url))
+      processPack[Id, Unit](Seq(buck, prefix, url), _ => redirectObject)
 
     def blockPack(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[Unit]   = Task.unit
     def unblockPack(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[Unit] = Task.unit
@@ -237,8 +294,8 @@ class AwsLink extends GenericLink {
     def delAllObjects(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[Unit] =
       for {
         keys <- listObjectsKeys(buck, prefix)
-        _ <- Task.traverse(keys) { i =>
-              delObject(buck, i)
+        _ <- Task.traverse(keys) { key =>
+              delObject(buck, key)
             }
       } yield ()
 
