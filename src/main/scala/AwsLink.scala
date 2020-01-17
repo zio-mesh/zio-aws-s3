@@ -59,31 +59,27 @@ import java.util.function.{ Consumer => _ }
 class AwsLink extends GenericLink {
 
   // GR Access permissions
-  val grantee = Grantee.builder().displayName("DEV Assets User").id("dev-assets").`type`("CanonicalUser")
-  val perm    = Permission.FULL_CONTROL
-  val grant   = Grant.builder().permission(perm).build //grantee(grantee).build()
+  val perm = Permission.FULL_CONTROL
 
   val service = new GenericLink.Service[Any] {
     def createClient(region: Region, endpoint: String): Task[S3AsyncClient] = {
       val client =
-        if (endpoint.isEmpty())
-          S3AsyncClient
-            .builder()
+        if (endpoint.isEmpty)
+          S3AsyncClient.builder
             .region(region)
-            .build()
+            .build
         else
-          S3AsyncClient
-            .builder()
+          S3AsyncClient.builder
             .region(region)
             .endpointOverride(URI.create(endpoint))
-            .build()
+            .build
       Task(client)
     }
 
     def createBucket(buck: String)(implicit s3: S3AsyncClient): Task[CreateBucketResponse] =
       IO.effectAsync[Throwable, CreateBucketResponse] { callback =>
         processResponse(
-          s3.createBucket(CreateBucketRequest.builder().bucket(buck).build()),
+          s3.createBucket(CreateBucketRequest.builder.bucket(buck).build),
           callback
         )
       }
@@ -91,26 +87,25 @@ class AwsLink extends GenericLink {
     def delBucket(buck: String)(implicit s3: S3AsyncClient): Task[DeleteBucketResponse] =
       IO.effectAsync[Throwable, DeleteBucketResponse] { callback =>
         processResponse(
-          s3.deleteBucket(DeleteBucketRequest.builder().bucket(buck).build()),
+          s3.deleteBucket(DeleteBucketRequest.builder.bucket(buck).build),
           callback
         )
       }
 
     def listBuckets(implicit s3: S3AsyncClient): Task[ListBucketsResponse] =
       IO.effectAsync[Throwable, ListBucketsResponse] { callback =>
-        processResponse(s3.listBuckets(), callback)
+        processResponse(s3.listBuckets, callback)
       }
 
     def listBucketObjects(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[ListObjectsV2Response] =
       for {
         resp <- IO.effect(
                  s3.listObjectsV2(
-                   ListObjectsV2Request
-                     .builder()
+                   ListObjectsV2Request.builder
                      .bucket(buck)
                      //  .maxKeys(10)
                      .prefix(prefix)
-                     .build()
+                     .build
                  )
                )
         list <- IO.effectAsync[Throwable, ListObjectsV2Response] { callback =>
@@ -152,10 +147,10 @@ class AwsLink extends GenericLink {
       implicit s3: S3AsyncClient
     ): Task[PutObjectAclResponse] =
       for {
-        acl <- Task.effect(AccessControlPolicy.builder.owner(owner).grants(grants).build())
+        acl <- Task.effect(AccessControlPolicy.builder.owner(owner).grants(grants).build)
         _   = println(s">>>>>> PUT ACL for key: ${key}")
         _   = println(s">>>>>>>>> Grants ${grants}")
-        req <- Task.effect(PutObjectAclRequest.builder().bucket(buck).key(key).accessControlPolicy(acl).build())
+        req <- Task.effect(PutObjectAclRequest.builder.bucket(buck).key(key).accessControlPolicy(acl).build)
         rsp <- IO
                 .effectAsync[Throwable, PutObjectAclResponse] { callback =>
                   processResponse(s3.putObjectAcl(req), callback)
@@ -182,11 +177,19 @@ class AwsLink extends GenericLink {
       implicit s3: S3AsyncClient
     ): Task[List[PutObjectAclResponse]] =
       for {
-        keys   <- listObjectsKeys(buck, prefix)
-        acl    <- getObjectAcl(buck, keys.head) // read ACL for the first element in a pack. Assume all others have the same ACL in the pack
-        owner  = acl.owner // Evaluate owner and grants to avoid multiple calls
-        grants = if (block) List[Grant]().asJava else acl.grants
-        list   <- Task.traverse(keys)(key => putObjectAcl(buck, key, acl.owner, grants))
+        keys  <- listObjectsKeys(buck, prefix)
+        acl   <- getObjectAcl(buck, keys.head) // read ACL for the first element in a pack. Assume all others have the same ACL in the pack
+        owner = acl.owner // Evaluate owner and grants to avoid multiple calls
+        // grants = if (block) List[Grant].asJava else acl.grants
+        grantee <- Task.effect(
+                    Grantee.builder.displayName("DEV Assets User").id("dev-assets").`type`("CanonicalUser")
+                  )
+        // grGrant <- Task.effect(Grant.builder.permission(perm).grantee(grantee).build)
+        grGrant <- Task.effect(Grant.builder.permission(perm).build)
+        grants  = if (block) List[Grant]().asJava else List(grGrant).asJava
+        _       = println(s">>>>>> Grants: ${grants}")
+
+        list <- Task.traverse(keys)(key => putObjectAcl(buck, key, acl.owner, grants))
       } yield list
 
     def redirectObject(buck: String, prefix: String, key: String, url: String)(
@@ -208,13 +211,12 @@ class AwsLink extends GenericLink {
 
       for {
         req <- IO.effect(
-                CopyObjectRequest
-                  .builder()
+                CopyObjectRequest.builder
                   .destinationBucket(buck)
                   .destinationKey(dstKey)
                   .copySource(src)
                   .websiteRedirectLocation(dst)
-                  .build()
+                  .build
               )
         rsp <- IO
                 .effectAsync[Throwable, CopyObjectResponse] { callback =>
@@ -227,7 +229,7 @@ class AwsLink extends GenericLink {
     def putObject(buck: String, key: String, file: String)(implicit s3: S3AsyncClient): Task[PutObjectResponse] =
       IO.effectAsync[Throwable, PutObjectResponse] { callback =>
         processResponse(
-          s3.putObject(PutObjectRequest.builder().bucket(buck).key(key).build(), Paths.get(file)),
+          s3.putObject(PutObjectRequest.builder.bucket(buck).key(key).build, Paths.get(file)),
           callback
         )
       }
@@ -235,7 +237,7 @@ class AwsLink extends GenericLink {
     def getObject(buck: String, key: String, file: String)(implicit s3: S3AsyncClient): Task[GetObjectResponse] =
       IO.effectAsync[Throwable, GetObjectResponse] { callback =>
         processResponse(
-          s3.getObject(GetObjectRequest.builder().bucket(buck).key(key).build(), Paths.get(file)),
+          s3.getObject(GetObjectRequest.builder.bucket(buck).key(key).build, Paths.get(file)),
           callback
         )
       }
@@ -243,7 +245,7 @@ class AwsLink extends GenericLink {
     def delObject(buck: String, key: String)(implicit s3: S3AsyncClient): Task[DeleteObjectResponse] =
       IO.effectAsync[Throwable, DeleteObjectResponse] { callback =>
         processResponse(
-          s3.deleteObject(DeleteObjectRequest.builder().bucket(buck).key(key).build()),
+          s3.deleteObject(DeleteObjectRequest.builder.bucket(buck).key(key).build),
           callback
         )
       }
