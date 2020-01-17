@@ -140,7 +140,7 @@ object GenericLink {
      */
     def blockPack(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[Unit]
 
-    // def aclPack(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[Unit]
+    def aclPack(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[List[PutObjectAclResponse]]
 
   }
 }
