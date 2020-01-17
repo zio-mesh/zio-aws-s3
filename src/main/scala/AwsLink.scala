@@ -138,8 +138,11 @@ class AwsLink extends GenericLink {
     def putObjectAcl(buck: String, key: String)(implicit s3: S3AsyncClient): Task[PutObjectAclResponse] =
       for {
         curr <- getObjectAcl(buck, key)
-        acl  <- Task.effect(AccessControlPolicy.builder.owner(curr.owner()).grants(curr.grants).build())
-        // _    = println(s">>>>>>>>>>>> KEY: ${key}")
+        grants = curr.grants.asScala
+          .drop(1)
+          .asJava // drop only the second and later Grants. grants.head is the owner and should be preserved!!!
+        // _      = println(s">>>>>>>>> Grants ${grants}")
+        acl <- Task.effect(AccessControlPolicy.builder.owner(curr.owner).grants(grants).build())
         req <- Task.effect(PutObjectAclRequest.builder().bucket(buck).key(key).accessControlPolicy(acl).build())
         rsp <- IO
                 .effectAsync[Throwable, PutObjectAclResponse] { callback =>
