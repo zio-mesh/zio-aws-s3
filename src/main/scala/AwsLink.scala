@@ -129,6 +129,8 @@ class AwsLink extends GenericLink {
     def getObjectAcl(buck: String, key: String)(implicit s3: S3AsyncClient): Task[GetObjectAclResponse] = {
       val req = GetObjectAclRequest.builder.bucket(buck).key(key).build
 
+      println(s">>>>> Get ACL for key: ${key}")
+
       IO.effectAsync[Throwable, GetObjectAclResponse] { callback =>
           processResponse(s3.getObjectAcl(req), callback)
         }
@@ -151,15 +153,17 @@ class AwsLink extends GenericLink {
                 .mapError(_ => new Throwable("Failed Processing PutObjectAclResponse"))
       } yield rsp
 
-    def redirectPack(buck: String, prefix: String, url: String)(
-      implicit s3: S3AsyncClient
-    ): Task[Unit] = {
-      val keys = listObjectsKeys(buck, prefix)
+    def redirectPack(buck: String, prefix: String, url: String)(implicit s3: S3AsyncClient): Task[Unit] =
+      for {
+        keys <- listObjectsKeys(buck, prefix)
+        _    = Task.traverse(keys)(key => redirectObject(buck, prefix, key, url))
+      } yield ()
 
-      keys.flatMap { keyList =>
-        Task.effect(keyList.foreach(key => redirectObject(buck, prefix, key, url)))
-      }
-    }
+    def blockPack(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[Unit] =
+      for {
+        keys <- listObjectsKeys(buck, prefix)
+        _    = Task.traverse(keys)(key => getObjectAcl(buck, key))
+      } yield ()
 
     def redirectObject(buck: String, prefix: String, key: String, url: String)(
       implicit s3: S3AsyncClient

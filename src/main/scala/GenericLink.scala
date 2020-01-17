@@ -135,5 +135,12 @@ object GenericLink {
      */
     def putObjectAcl(buck: String, key: String)(implicit s3: S3AsyncClient): Task[PutObjectAclResponse]
 
+    /**
+     * Block all objects with ACL remove permission for a group of objects under the common path
+     */
+    def blockPack(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[Unit]
+
+    // def aclPack(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[Unit]
+
   }
 }
