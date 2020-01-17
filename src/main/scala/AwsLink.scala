@@ -160,13 +160,16 @@ class AwsLink extends GenericLink {
         _    = Task.traverse(keys)(key => redirectObject(buck, prefix, key, url))
       } yield ()
 
-    def blockPack(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[Unit] =
+    def blockPack(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[Unit]   = Task.unit
+    def unblockPack(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[Unit] = Task.unit
+
+    def getPackAcl(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[List[GetObjectAclResponse]] =
       for {
         keys <- listObjectsKeys(buck, prefix)
-        _    = Task.traverse(keys)(key => getObjectAcl(buck, key))
-      } yield ()
+        list <- Task.traverse(keys)(key => getObjectAcl(buck, key))
+      } yield list
 
-    def aclPack(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[List[PutObjectAclResponse]] =
+    def putPackAcl(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[List[PutObjectAclResponse]] =
       for {
         keys <- listObjectsKeys(buck, prefix)
         list <- Task.traverse(keys)(key => putObjectAcl(buck, key))

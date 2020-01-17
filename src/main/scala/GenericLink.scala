@@ -128,19 +128,32 @@ object GenericLink {
     /**
      * get current ACL settings
      */
-    def getObjectAcl(buck: String, key: String)(implicit s3: S3AsyncClient): Task[GetObjectAclResponse]
+    // def getObjectAcl(buck: String, key: String)(implicit s3: S3AsyncClient): Task[GetObjectAclResponse]
 
     /**
      * put new ACL settings
      */
-    def putObjectAcl(buck: String, key: String)(implicit s3: S3AsyncClient): Task[PutObjectAclResponse]
+    // def putObjectAcl(buck: String, key: String)(implicit s3: S3AsyncClient): Task[PutObjectAclResponse]
 
     /**
      * Block all objects with ACL remove permission for a group of objects under the common path
      */
     def blockPack(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[Unit]
 
-    def aclPack(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[List[PutObjectAclResponse]]
+    /**
+     * Unblock all objects with ACL remove permission for a group of objects under the common path
+     */
+    def unblockPack(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[Unit]
+
+    /**
+     * Get ACL for each object in a path
+     */
+    def getPackAcl(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[List[GetObjectAclResponse]]
+
+    /**
+     * Put ACL for each object in a path
+     */
+    def putPackAcl(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[List[PutObjectAclResponse]]
 
   }
 }
