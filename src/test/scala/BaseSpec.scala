@@ -100,7 +100,7 @@ object Tests {
     testM("get pack ACL") {
       val res = for {
         s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        out <- aws.service.getPackAcl(bucket, prefix0)(s3)
+        out <- aws.service.getPackAcl(bucket, prefix)(s3)
         _   = out.foreach(println)
       } yield out
 
@@ -109,7 +109,7 @@ object Tests {
     testM("set pack ACL") {
       val res = for {
         s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        out <- aws.service.putPackAcl(bucket, prefix)(s3)
+        out <- aws.service.putPackAcl(bucket, prefix, false)(s3)
         _   = out.foreach(println)
       } yield out
 

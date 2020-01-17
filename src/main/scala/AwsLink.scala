@@ -38,9 +38,13 @@ import software.amazon.awssdk.services.s3.model.{
   GetObjectAclResponse,
   GetObjectRequest,
   GetObjectResponse,
+  Grant,
+  Grantee,
   ListBucketsResponse,
   ListObjectsV2Request,
   ListObjectsV2Response,
+  Owner,
+  Permission,
   PutObjectAclRequest,
   PutObjectAclResponse,
   PutObjectRequest,
@@ -49,8 +53,15 @@ import software.amazon.awssdk.services.s3.model.{
 
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import java.util.{ List => JList }
+import java.util.function.{ Consumer => _ }
 
 class AwsLink extends GenericLink {
+
+  // GR Access permissions
+  val grantee = Grantee.builder().displayName("DEV Assets User").id("dev-assets").`type`("CanonicalUser")
+  val perm    = Permission.FULL_CONTROL
+  val grant   = Grant.builder().permission(perm).build //grantee(grantee).build()
 
   val service = new GenericLink.Service[Any] {
     def createClient(region: Region, endpoint: String): Task[S3AsyncClient] = {
@@ -137,15 +148,13 @@ class AwsLink extends GenericLink {
         .mapError(_ => new Throwable("Failed Processing CopyObjectResponse"))
     }
 
-    def putObjectAcl(buck: String, key: String)(implicit s3: S3AsyncClient): Task[PutObjectAclResponse] =
+    def putObjectAcl(buck: String, key: String, owner: Owner, grants: JList[Grant])(
+      implicit s3: S3AsyncClient
+    ): Task[PutObjectAclResponse] =
       for {
-        curr <- getObjectAcl(buck, key)
-        grants = curr.grants.asScala
-          .drop(1)
-          .asJava // drop only the second and later Grants. grants.head is the owner and should be preserved!!!
+        acl <- Task.effect(AccessControlPolicy.builder.owner(owner).grants(grants).build())
         _   = println(s">>>>>> PUT ACL for key: ${key}")
         _   = println(s">>>>>>>>> Grants ${grants}")
-        acl <- Task.effect(AccessControlPolicy.builder.owner(curr.owner).grants(grants).build())
         req <- Task.effect(PutObjectAclRequest.builder().bucket(buck).key(key).accessControlPolicy(acl).build())
         rsp <- IO
                 .effectAsync[Throwable, PutObjectAclResponse] { callback =>
@@ -169,10 +178,15 @@ class AwsLink extends GenericLink {
         list <- Task.traverse(keys)(key => getObjectAcl(buck, key))
       } yield list
 
-    def putPackAcl(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[List[PutObjectAclResponse]] =
+    def putPackAcl(buck: String, prefix: String, block: Boolean)(
+      implicit s3: S3AsyncClient
+    ): Task[List[PutObjectAclResponse]] =
       for {
-        keys <- listObjectsKeys(buck, prefix)
-        list <- Task.traverse(keys)(key => putObjectAcl(buck, key))
+        keys   <- listObjectsKeys(buck, prefix)
+        acl    <- getObjectAcl(buck, keys.head) // read ACL for the first element in a pack. Assume all others have the same ACL in the pack
+        owner  = acl.owner // Evaluate owner and grants to avoid multiple calls
+        grants = if (block) List[Grant]().asJava else acl.grants
+        list   <- Task.traverse(keys)(key => putObjectAcl(buck, key, acl.owner, grants))
       } yield list
 
     def redirectObject(buck: String, prefix: String, key: String, url: String)(

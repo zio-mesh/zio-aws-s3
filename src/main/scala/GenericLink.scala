@@ -153,7 +153,9 @@ object GenericLink {
     /**
      * Put ACL for each object in a path
      */
-    def putPackAcl(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[List[PutObjectAclResponse]]
+    def putPackAcl(buck: String, prefix: String, block: Boolean)(
+      implicit s3: S3AsyncClient
+    ): Task[List[PutObjectAclResponse]]
 
   }
 }
