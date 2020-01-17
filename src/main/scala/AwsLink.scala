@@ -138,8 +138,9 @@ class AwsLink extends GenericLink {
     def putObjectAcl(buck: String, key: String)(implicit s3: S3AsyncClient): Task[PutObjectAclResponse] =
       for {
         curr <- getObjectAcl(buck, key)
-        acl  = AccessControlPolicy.builder.grants(curr.grants).build
-        req  <- IO.effect(PutObjectAclRequest.builder().bucket(buck).key(key).accessControlPolicy(acl).build)
+        acl  <- Task.effect(AccessControlPolicy.builder.owner(curr.owner()).grants(curr.grants).build())
+        // _    = println(s">>>>>>>>>>>> KEY: ${key}")
+        req <- Task.effect(PutObjectAclRequest.builder().bucket(buck).key(key).accessControlPolicy(acl).build())
         rsp <- IO
                 .effectAsync[Throwable, PutObjectAclResponse] { callback =>
                   processResponse(s3.putObjectAcl(req), callback)
