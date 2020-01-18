@@ -39,7 +39,6 @@ import software.amazon.awssdk.services.s3.model.{
   GetObjectRequest,
   GetObjectResponse,
   Grant,
-  Grantee,
   ListBucketsResponse,
   ListObjectsV2Request,
   ListObjectsV2Response,
@@ -48,18 +47,20 @@ import software.amazon.awssdk.services.s3.model.{
   PutObjectAclRequest,
   PutObjectAclResponse,
   PutObjectRequest,
-  PutObjectResponse
+  PutObjectResponse,
+  Type
 }
 
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.{ List => JList }
-import java.util.function.{ Consumer => _ }
+// import java.util.function.{ Consumer => _ }
 
 class AwsLink extends GenericLink {
 
   // GR Access permissions
-  val perm = Permission.FULL_CONTROL
+  val perm     = Permission.FULL_CONTROL
+  val OWNER_ID = "123"
 
   val service = new GenericLink.Service[Any] {
     def createClient(region: Region, endpoint: String): Task[S3AsyncClient] = {
@@ -181,15 +182,43 @@ class AwsLink extends GenericLink {
         acl   <- getObjectAcl(buck, keys.head) // read ACL for the first element in a pack. Assume all others have the same ACL in the pack
         owner = acl.owner // Evaluate owner and grants to avoid multiple calls
         // grants = if (block) List[Grant].asJava else acl.grants
-        grantee <- Task.effect(
-                    Grantee.builder.displayName("DEV Assets User").id("dev-assets").`type`("CanonicalUser")
+        // grantee <- Task.effect(
+        //             Grantee.builder().displayName("DEV Assets User").id("dev-assets").`type`("CanonicalUser")
+        //           )
+        // _ = println(s">>>>>> Grantee: ${grantee}")
+        // // grGrant <- Task.effect(Grant.builder.permission(perm).grantee(grantee).build)
+        // // grGrant <- Task.effect(Grant.builder.permission(perm).build)
+        // // grGrant <- Task.effect(Grant.builder.permission(perm).grantee(grantee).build)
+        // grGrant <- Task.effect(Grant.builder.grantee(grantee).permission(perm).build)
+        _ = println(">>>>>>> start grGrant")
+        grGrant <- Task.effect(
+                    Grant
+                      .builder()
+                      .grantee(bld => {
+                        bld
+                          .id("dev-assets")
+                          .`type`(Type.CANONICAL_USER)
+                          .displayName("DEV Assets User")
+                      })
+                      .permission(Permission.FULL_CONTROL)
+                      .grantee(bld => {
+                        bld
+                          .`type`(Type.GROUP)
+                          .uri("http://acs.amazonaws.com/groups/global/AllUsers")
+                      })
+                      .permission(Permission.READ)
+                      .build
                   )
-        // grGrant <- Task.effect(Grant.builder.permission(perm).grantee(grantee).build)
-        grGrant <- Task.effect(Grant.builder.permission(perm).build)
-        grants  = if (block) List[Grant]().asJava else List(grGrant).asJava
-        _       = println(s">>>>>> Grants: ${grants}")
+        grants = if (block) List.empty[Grant] else List(grGrant)
+        // grants = if (block) List[Grant]() else List(grGrant)
+        // _ = println(">>>>>>> start grants")
 
-        list <- Task.traverse(keys)(key => putObjectAcl(buck, key, acl.owner, grants))
+        // grants = List(grGrant)
+        // _      = println(s">>>>>> Grants: ${grants}")
+
+        _ = println(">>>>>>> start putobjectACL")
+
+        list <- Task.traverse(keys)(key => putObjectAcl(buck, key, acl.owner, grants.asJava))
       } yield list
 
     def redirectObject(buck: String, prefix: String, key: String, url: String)(
