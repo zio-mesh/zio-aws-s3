@@ -27,6 +27,7 @@ target
 .bloop
 .metals
 project/.bloop
+.vscode
 
 # Mac
 .DS_Store

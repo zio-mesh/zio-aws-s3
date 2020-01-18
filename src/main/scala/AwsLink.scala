@@ -25,6 +25,7 @@ import zio.{ IO, Task }
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.{
+  AccessControlPolicy,
   CopyObjectRequest,
   CopyObjectResponse,
   CreateBucketRequest,
@@ -33,41 +34,48 @@ import software.amazon.awssdk.services.s3.model.{
   DeleteBucketResponse,
   DeleteObjectRequest,
   DeleteObjectResponse,
+  GetObjectAclRequest,
+  GetObjectAclResponse,
   GetObjectRequest,
   GetObjectResponse,
+  Grant,
   ListBucketsResponse,
   ListObjectsV2Request,
   ListObjectsV2Response,
+  Owner,
+  Permission,
+  PutObjectAclRequest,
+  PutObjectAclResponse,
   PutObjectRequest,
-  PutObjectResponse
+  PutObjectResponse,
+  Type
 }
 
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import java.util.{ List => JList }
 
 class AwsLink extends GenericLink {
 
   val service = new GenericLink.Service[Any] {
     def createClient(region: Region, endpoint: String): Task[S3AsyncClient] = {
       val client =
-        if (endpoint.isEmpty())
-          S3AsyncClient
-            .builder()
+        if (endpoint.isEmpty)
+          S3AsyncClient.builder
             .region(region)
-            .build()
+            .build
         else
-          S3AsyncClient
-            .builder()
+          S3AsyncClient.builder
             .region(region)
             .endpointOverride(URI.create(endpoint))
-            .build()
+            .build
       Task(client)
     }
 
     def createBucket(buck: String)(implicit s3: S3AsyncClient): Task[CreateBucketResponse] =
       IO.effectAsync[Throwable, CreateBucketResponse] { callback =>
         processResponse(
-          s3.createBucket(CreateBucketRequest.builder().bucket(buck).build()),
+          s3.createBucket(CreateBucketRequest.builder.bucket(buck).build),
           callback
         )
       }
@@ -75,26 +83,25 @@ class AwsLink extends GenericLink {
     def delBucket(buck: String)(implicit s3: S3AsyncClient): Task[DeleteBucketResponse] =
       IO.effectAsync[Throwable, DeleteBucketResponse] { callback =>
         processResponse(
-          s3.deleteBucket(DeleteBucketRequest.builder().bucket(buck).build()),
+          s3.deleteBucket(DeleteBucketRequest.builder.bucket(buck).build),
           callback
         )
       }
 
     def listBuckets(implicit s3: S3AsyncClient): Task[ListBucketsResponse] =
       IO.effectAsync[Throwable, ListBucketsResponse] { callback =>
-        processResponse(s3.listBuckets(), callback)
+        processResponse(s3.listBuckets, callback)
       }
 
     def listBucketObjects(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[ListObjectsV2Response] =
       for {
         resp <- IO.effect(
                  s3.listObjectsV2(
-                   ListObjectsV2Request
-                     .builder()
+                   ListObjectsV2Request.builder
                      .bucket(buck)
                      //  .maxKeys(10)
                      .prefix(prefix)
-                     .build()
+                     .build
                  )
                )
         list <- IO.effectAsync[Throwable, ListObjectsV2Response] { callback =>
@@ -109,31 +116,115 @@ class AwsLink extends GenericLink {
       for {
         list <- listBucketObjects(buck, prefix)
         keys = list.contents.asScala.map(_.key).toList
-        _    = println(keys.size)
+        _    = println(s">>>>>> Total keys found for prefix ${prefix}: ${keys.size}")
       } yield keys
 
     def lookupObject(buck: String, prefix: String, key: String)(implicit s3: S3AsyncClient): Task[Boolean] =
       for {
-        list <- listBucketObjects(buck, prefix)
-        path = prefix + "/" + key
+        list   <- listBucketObjects(buck, prefix)
+        newKey = prefix + "/" + key
         res = list.contents.asScala
-          .filter(_.key == path)
+          .filter(_.key == newKey)
           .nonEmpty
       } yield res
 
-    def redirectObject(buck: String, prefix: String, url: String)(
+    def getObjectAcl(buck: String, key: String)(implicit s3: S3AsyncClient): Task[GetObjectAclResponse] = {
+      val req = GetObjectAclRequest.builder.bucket(buck).key(key).build
+
+      println(s">>>>>> Get ACL for key: ${key}")
+
+      IO.effectAsync[Throwable, GetObjectAclResponse] { callback =>
+          processResponse(s3.getObjectAcl(req), callback)
+        }
+        .mapError(_ => new Throwable("Failed Processing CopyObjectResponse"))
+    }
+
+    def putObjectAcl(buck: String, key: String, owner: Owner, grants: JList[Grant])(
+      implicit s3: S3AsyncClient
+    ): Task[PutObjectAclResponse] =
+      for {
+        acl <- Task.effect(AccessControlPolicy.builder.owner(owner).grants(grants).build)
+        _   = println(s">>>>>> PUT ACL for key: ${key}")
+        req <- Task.effect(PutObjectAclRequest.builder.bucket(buck).key(key).accessControlPolicy(acl).build)
+        rsp <- IO
+                .effectAsync[Throwable, PutObjectAclResponse] { callback =>
+                  processResponse(s3.putObjectAcl(req), callback)
+                }
+                .mapError(_ => new Throwable("Failed Processing PutObjectAclResponse"))
+      } yield rsp
+
+    def redirectPack(buck: String, prefix: String, url: String)(implicit s3: S3AsyncClient): Task[Unit] =
+      for {
+        keys <- listObjectsKeys(buck, prefix)
+        _    = Task.traverse(keys)(key => redirectObject(buck, prefix, key, url))
+      } yield ()
+
+    def blockPack(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[Unit] =
+      putPackAcl(buck, prefix, true).as(())
+
+    def unblockPack(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[Unit] =
+      putPackAcl(buck, prefix, false).as(())
+
+    def getPackAcl(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[List[GetObjectAclResponse]] =
+      for {
+        keys <- listObjectsKeys(buck, prefix)
+        list <- Task.traverse(keys)(key => getObjectAcl(buck, key))
+      } yield list
+
+    def putPackAcl(buck: String, prefix: String, block: Boolean)(
+      implicit s3: S3AsyncClient
+    ): Task[List[PutObjectAclResponse]] =
+      for {
+        keys  <- listObjectsKeys(buck, prefix)
+        acl   <- getObjectAcl(buck, keys.head) // read ACL for the first element in a pack. Assume all others have the same ACL in the pack
+        owner = acl.owner // Evaluate owner and grants to avoid multiple calls
+        grGrant <- Task.effect(
+                    Grant
+                      .builder()
+                      .grantee(bld => {
+                        bld
+                          .id("dev-assets")
+                          .`type`(Type.CANONICAL_USER)
+                          .displayName("DEV Assets User")
+                      })
+                      .permission(Permission.FULL_CONTROL)
+                      .grantee(bld => {
+                        bld
+                          .`type`(Type.GROUP)
+                          .uri("http://acs.amazonaws.com/groups/global/AllUsers")
+                      })
+                      .permission(Permission.READ)
+                      .build
+                  )
+        grants = if (block) List.empty[Grant] else List(grGrant)
+        list   <- Task.traverse(keys)(key => putObjectAcl(buck, key, acl.owner, grants.asJava))
+      } yield list
+
+    def redirectObject(buck: String, prefix: String, key: String, url: String)(
       implicit s3: S3AsyncClient
     ): Task[CopyObjectResponse] = {
-      val src = URLEncoder.encode(buck + "/" + prefix, StandardCharsets.UTF_8.toString)
-      val dst = URLEncoder.encode(buck + "/" + prefix + url, StandardCharsets.UTF_8.toString)
+      val dstPrefix = prefix + "/" + url
+      copyObject(buck, dstPrefix, key, key) // copy each object inside the same buck, but with diff indexes
+    }
+
+    def copyObject(buck: String, dstPrefix: String, srcKey: String, dstKey: String)(
+      implicit s3: S3AsyncClient
+    ): Task[CopyObjectResponse] = {
+
+      val src = URLEncoder.encode(buck + "/" + srcKey, StandardCharsets.UTF_8.toString)
+      val dst = URLEncoder.encode(buck + "/" + dstKey, StandardCharsets.UTF_8.toString)
+
+      println(s">>>>>> Copy Src Link: ${src}")
+      println(s">>>>>> Copy Dst link: ${dst}")
+
       for {
         req <- IO.effect(
-                CopyObjectRequest
-                  .builder()
-                  .copySource(src)
+                CopyObjectRequest.builder
                   .destinationBucket(buck)
+                  .destinationKey(dstKey)
+                  .copySource(src)
                   .websiteRedirectLocation(dst)
-                  .build()
+                  .build
               )
         rsp <- IO
                 .effectAsync[Throwable, CopyObjectResponse] { callback =>
@@ -141,13 +232,12 @@ class AwsLink extends GenericLink {
                 }
                 .mapError(_ => new Throwable("Failed Processing CopyObjectResponse"))
       } yield rsp
-
     }
 
     def putObject(buck: String, key: String, file: String)(implicit s3: S3AsyncClient): Task[PutObjectResponse] =
       IO.effectAsync[Throwable, PutObjectResponse] { callback =>
         processResponse(
-          s3.putObject(PutObjectRequest.builder().bucket(buck).key(key).build(), Paths.get(file)),
+          s3.putObject(PutObjectRequest.builder.bucket(buck).key(key).build, Paths.get(file)),
           callback
         )
       }
@@ -155,7 +245,7 @@ class AwsLink extends GenericLink {
     def getObject(buck: String, key: String, file: String)(implicit s3: S3AsyncClient): Task[GetObjectResponse] =
       IO.effectAsync[Throwable, GetObjectResponse] { callback =>
         processResponse(
-          s3.getObject(GetObjectRequest.builder().bucket(buck).key(key).build(), Paths.get(file)),
+          s3.getObject(GetObjectRequest.builder.bucket(buck).key(key).build, Paths.get(file)),
           callback
         )
       }
@@ -163,7 +253,7 @@ class AwsLink extends GenericLink {
     def delObject(buck: String, key: String)(implicit s3: S3AsyncClient): Task[DeleteObjectResponse] =
       IO.effectAsync[Throwable, DeleteObjectResponse] { callback =>
         processResponse(
-          s3.deleteObject(DeleteObjectRequest.builder().bucket(buck).key(key).build()),
+          s3.deleteObject(DeleteObjectRequest.builder.bucket(buck).key(key).build),
           callback
         )
       }
@@ -171,8 +261,8 @@ class AwsLink extends GenericLink {
     def delAllObjects(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[Unit] =
       for {
         keys <- listObjectsKeys(buck, prefix)
-        _ <- Task.traverse(keys) { i =>
-              delObject(buck, i)
+        _ <- Task.traverse(keys) { key =>
+              delObject(buck, key)
             }
       } yield ()
 

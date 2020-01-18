@@ -1,5 +1,5 @@
 val zioVersion = "1.0.0-RC17"
-val awsVersion = "2.10.42"
+val awsVersion = "2.10.52"
 
 // *****************************************************************************
 // Projects
@@ -49,7 +49,7 @@ lazy val commonSettings =
     licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0")),
     homepage := Some(url("https://github.com/Neurodyne/zio-aws-s3")),
     scalacOptions --= Seq(
-      // "-Xfatal-warnings",
+      "-Xfatal-warnings"
     ),
     Compile / unmanagedSourceDirectories := Seq((Compile / scalaSource).value),
     Test / unmanagedSourceDirectories := Seq((Test / scalaSource).value),
@@ -63,7 +63,7 @@ lazy val scalafmtSettings =
 
 lazy val sonatypeSettings =
   Seq(
-    version := "0.0.12",
+    version := "0.8.13",
     sonatypeProfileName := "com.neurodyne",
     scmInfo := Some(
       ScmInfo(
