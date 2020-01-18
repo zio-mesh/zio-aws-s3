@@ -1,5 +1,5 @@
 val zioVersion = "1.0.0-RC17"
-val awsVersion = "2.10.42"
+val awsVersion = "2.10.52"
 
 // *****************************************************************************
 // Projects
@@ -64,7 +64,7 @@ lazy val scalafmtSettings =
 
 lazy val sonatypeSettings =
   Seq(
-    version := "0.0.12",
+    version := "0.8.13",
     sonatypeProfileName := "com.neurodyne",
     scmInfo := Some(
       ScmInfo(

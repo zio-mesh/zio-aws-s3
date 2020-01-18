@@ -24,11 +24,17 @@ import software.amazon.awssdk.services.s3.model.{
   CreateBucketResponse,
   DeleteBucketResponse,
   DeleteObjectResponse,
+  GetObjectAclResponse,
   GetObjectResponse,
+  Grant,
   ListBucketsResponse,
   ListObjectsV2Response,
+  Owner,
+  PutObjectAclResponse,
   PutObjectResponse
 }
+
+import java.util.{ List => JList }
 
 trait GenericLink {
   val service: GenericLink.Service[Any]
@@ -83,9 +89,25 @@ object GenericLink {
     def lookupObject(buck: String, prefix: String, key: String)(implicit s3: S3AsyncClient): Task[Boolean]
 
     /**
-     * Setup redirection for all objects with a prefix
+     * Setup redirection for a single object
      */
-    def redirectObject(buck: String, prefix: String, url: String)(implicit s3: S3AsyncClient): Task[CopyObjectResponse]
+    def redirectObject(buck: String, prefix: String, key: String, url: String)(
+      implicit s3: S3AsyncClient
+    ): Task[CopyObjectResponse]
+
+    /**
+     * Setup redirection for all objects with a common prefix
+     */
+    def redirectPack(buck: String, prefix: String, url: String)(
+      implicit s3: S3AsyncClient
+    ): Task[Unit]
+
+    /**
+     * Copy an object
+     */
+    def copyObject(buck: String, dstPrefix: String, srcKey: String, dstKey: String)(
+      implicit s3: S3AsyncClient
+    ): Task[CopyObjectResponse]
 
     /**
      * Put a file with a key into a Bucket
@@ -106,6 +128,40 @@ object GenericLink {
      * Delete all objects
      */
     def delAllObjects(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[Unit]
+
+    /**
+     * get current ACL settings
+     */
+    def getObjectAcl(buck: String, key: String)(implicit s3: S3AsyncClient): Task[GetObjectAclResponse]
+
+    /**
+     * put new ACL settings
+     */
+    def putObjectAcl(buck: String, key: String, owner: Owner, grants: JList[Grant])(
+      implicit s3: S3AsyncClient
+    ): Task[PutObjectAclResponse]
+
+    /**
+     * Block all objects with ACL remove permission for a group of objects under the common path
+     */
+    def blockPack(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[Unit]
+
+    /**
+     * Unblock all objects with ACL remove permission for a group of objects under the common path
+     */
+    def unblockPack(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[Unit]
+
+    /**
+     * Get ACL for each object in a path
+     */
+    def getPackAcl(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[List[GetObjectAclResponse]]
+
+    /**
+     * Put ACL for each object in a path
+     */
+    def putPackAcl(buck: String, prefix: String, block: Boolean)(
+      implicit s3: S3AsyncClient
+    ): Task[List[PutObjectAclResponse]]
 
   }
 }
