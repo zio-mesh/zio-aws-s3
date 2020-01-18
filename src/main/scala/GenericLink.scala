@@ -26,11 +26,15 @@ import software.amazon.awssdk.services.s3.model.{
   DeleteObjectResponse,
   GetObjectAclResponse,
   GetObjectResponse,
+  Grant,
   ListBucketsResponse,
   ListObjectsV2Response,
+  Owner,
   PutObjectAclResponse,
   PutObjectResponse
 }
+
+import java.util.{ List => JList }
 
 trait GenericLink {
   val service: GenericLink.Service[Any]
@@ -128,12 +132,14 @@ object GenericLink {
     /**
      * get current ACL settings
      */
-    // def getObjectAcl(buck: String, key: String)(implicit s3: S3AsyncClient): Task[GetObjectAclResponse]
+    def getObjectAcl(buck: String, key: String)(implicit s3: S3AsyncClient): Task[GetObjectAclResponse]
 
     /**
      * put new ACL settings
      */
-    // def putObjectAcl(buck: String, key: String)(implicit s3: S3AsyncClient): Task[PutObjectAclResponse]
+    def putObjectAcl(buck: String, key: String, owner: Owner, grants: JList[Grant])(
+      implicit s3: S3AsyncClient
+    ): Task[PutObjectAclResponse]
 
     /**
      * Block all objects with ACL remove permission for a group of objects under the common path
