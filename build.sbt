@@ -64,8 +64,8 @@ lazy val scalafmtSettings =
 
 lazy val sonatypeSettings =
   Seq(
-    version := "0.8.13",
-    sonatypeProfileName := "com.neurodyne",
+    version := "0.4.13",
+    sonatypeProfileName := "pro.neurodyne",
     scmInfo := Some(
       ScmInfo(
         homepage.value.get,
@@ -85,7 +85,10 @@ lazy val sonatypeSettings =
       false
     },
     publishTo := sonatypePublishToBundle.value,
-    publishMavenStyle := true
+    publishMavenStyle := true,
+    pgpPassphrase := sys.env.get("PGP_PASSWORD").map(_.toArray),
+    pgpPublicRing := file("/tmp/public.asc"),
+    pgpSecretRing := file("/tmp/secret.asc")
   )
 
 // Aliases
