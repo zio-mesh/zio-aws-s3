@@ -99,7 +99,7 @@ class AwsLink extends GenericLink {
                  s3.listObjectsV2(
                    ListObjectsV2Request.builder
                      .bucket(buck)
-                      .maxKeys(20)
+                     .maxKeys(20)
                      .prefix(prefix)
                      .build
                  )
