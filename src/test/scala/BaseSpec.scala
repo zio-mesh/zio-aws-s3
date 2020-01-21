@@ -146,22 +146,19 @@ object Helper {
   import java.nio.file.{ Files }
   import java.io.File
 
-  import software.amazon.awssdk.regions.Region
-
-  val region: Region = Region.US_EAST_1
-  val env            = System.getenv()
-  val endpoint       = env.get("AWS_ENDPOINT")
-  val bucket         = env.get("AWS_BUCKET")
+  val env      = System.getenv()
+  val endpoint = env.get("AWS_ENDPOINT")
+  val bucket   = env.get("AWS_BUCKET")
 
   def createOutFile(dir: String = "./", file: String = "outfile"): File = {
     val outDir = Files.createTempDirectory(dir)
     val path   = outDir.resolve(file)
     println("File to create path: " + path)
     Files.createFile(path).toFile
-
   }
 
   val aws     = new AwsLink {}
+  val region  = aws.region
   val key     = "42x42.jpg"
   val url     = "backup"
   val prefix  = "media/uploads/images/cf3a53e4-37bd-11ea-b430-6f9a089d05d1"

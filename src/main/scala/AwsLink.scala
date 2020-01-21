@@ -56,6 +56,7 @@ import java.nio.charset.StandardCharsets
 import java.util.{ List => JList }
 
 class AwsLink extends GenericLink {
+  val region = software.amazon.awssdk.regions.Region.US_EAST_1
 
   val service = new GenericLink.Service[Any] {
     def createClient(region: Region, endpoint: String): Task[S3AsyncClient] = {
