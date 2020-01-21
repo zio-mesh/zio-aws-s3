@@ -19,7 +19,6 @@ package zio_aws_s3
 import java.nio.file.{ Paths }
 import java.util.concurrent.CompletableFuture
 import java.net.URI
-// import scala.jdk.CollectionConverters._
 import scala.collection.JavaConverters._
 
 import zio.{ IO, Task }
@@ -100,7 +99,7 @@ class AwsLink extends GenericLink {
                  s3.listObjectsV2(
                    ListObjectsV2Request.builder
                      .bucket(buck)
-                     //  .maxKeys(10)
+                      .maxKeys(20)
                      .prefix(prefix)
                      .build
                  )
