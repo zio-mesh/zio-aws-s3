@@ -65,7 +65,7 @@ lazy val scalafmtSettings =
 lazy val sonatypeSettings =
   Seq(
     version := "0.4.13",
-    sonatypeProfileName := "pro.neurodyne",
+    sonatypeProfileName := "tampler",
     scmInfo := Some(
       ScmInfo(
         homepage.value.get,
