@@ -23,6 +23,7 @@ import zio.test.Assertion._
 import zio.test.TestAspect._
 
 import java.io.IOException
+import setup._
 import Helper._
 
 object Tests {
@@ -101,6 +102,7 @@ object Tests {
       val res = for {
         s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
         out <- aws.service.getPackAcl(bucket, prefix)(s3)
+        _   = println(out)
       } yield out
 
       assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
@@ -112,7 +114,7 @@ object Tests {
       } yield out
 
       assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
-    } @@ timeout(10.seconds)
+    } @@ timeout(10.seconds) @@ ignore
   )
 
   val blockSuite = suite("Block suite")(
@@ -123,8 +125,8 @@ object Tests {
       } yield out
 
       assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
-    } @@ timeout(10.seconds),
-    testM("block content pack by adding ACL grant") {
+    } @@ timeout(10.seconds) @@ ignore,
+    testM("unblock content pack by adding ACL grant") {
       val res = for {
         s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
         out <- aws.service.unblockPack(bucket, prefix)(s3)
@@ -132,7 +134,7 @@ object Tests {
 
       assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
     } @@ timeout(10.seconds)
-  ) @@ ignore
+  )
 }
 
 object BuckSpec  extends DefaultRunnableSpec(suite("Bucket Spec")(Tests.bucketsSuite))
@@ -146,10 +148,6 @@ object Helper {
   import java.nio.file.{ Files }
   import java.io.File
 
-  val env      = System.getenv()
-  val endpoint = env.get("AWS_ENDPOINT")
-  val bucket   = env.get("AWS_BUCKET")
-
   def createOutFile(dir: String = "./", file: String = "outfile"): File = {
     val outDir = Files.createTempDirectory(dir)
     val path   = outDir.resolve(file)
@@ -157,12 +155,12 @@ object Helper {
     Files.createFile(path).toFile
   }
 
-  val aws     = new AwsLink {}
-  val region  = aws.region
-  val key     = "42x42.jpg"
-  val url     = "backup"
-  val prefix  = "media/uploads/images/cf3a53e4-37bd-11ea-b430-6f9a089d05d1"
-  val prefix0 = "media/uploads/images/dea5c048-37bd-11ea-8194-399b761e9b96"
+  val aws    = new AwsLink {}
+  val key    = "42x42.jpg"
+  val url    = "backup"
+  val prefix = "media/uploads/images/cf3a53e4-37bd-11ea-b430-6f9a089d05d1"
+  // val prefix = "media/uploads/images/a3565a30-e465-11e9-a274-456d87bf0d45"
+  // val prefix  = "media/uploads/images/dea5c048-37bd-11ea-8194-399b761e9b96"
   val fullKey = prefix + "/" + key
 
 }
