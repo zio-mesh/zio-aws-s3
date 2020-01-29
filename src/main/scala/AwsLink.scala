@@ -19,7 +19,7 @@ package zio_aws_s3
 import java.nio.file.{ Paths }
 import java.util.concurrent.CompletableFuture
 import java.net.URI
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 import zio.{ IO, Task }
 import software.amazon.awssdk.regions.Region
