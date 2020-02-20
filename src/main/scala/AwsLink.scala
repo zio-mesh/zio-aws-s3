@@ -182,18 +182,18 @@ class AwsLink extends GenericLink {
         grGrant <- Task.effect(
                     Grant
                       .builder()
-                      .grantee(bld => {
+                      .grantee { bld =>
                         bld
                           .id("dev-assets")
                           .`type`(Type.CANONICAL_USER)
                           .displayName("DEV Assets User")
-                      })
+                      }
                       .permission(Permission.FULL_CONTROL)
-                      .grantee(bld => {
+                      .grantee { bld =>
                         bld
                           .`type`(Type.GROUP)
                           .uri("http://acs.amazonaws.com/groups/global/AllUsers")
-                      })
+                      }
                       .permission(Permission.READ)
                       .build
                   )
@@ -271,11 +271,11 @@ class AwsLink extends GenericLink {
       fut: CompletableFuture[T],
       callback: Task[T] => Unit
     ): Unit =
-      fut.handle[Unit]((response, err) => {
+      fut.handle[Unit] { (response, err) =>
         err match {
           case null => callback(IO.succeed(response))
           case ex   => callback(IO.fail(ex))
         }
-      }): Unit
+      }: Unit
   }
 }
