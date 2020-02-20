@@ -20,6 +20,7 @@ import java.nio.file.{ Paths }
 import java.util.concurrent.CompletableFuture
 import java.net.URI
 import scala.jdk.CollectionConverters._
+import com.github.ghik.silencer.silent
 
 import zio.{ IO, Task }
 import software.amazon.awssdk.regions.Region
@@ -172,6 +173,7 @@ class AwsLink extends GenericLink {
         list <- Task.traverse(keys)(key => getObjectAcl(buck, key))
       } yield list
 
+    @silent("discarded non-Unit value")
     def putPackAcl(buck: String, prefix: String, block: Boolean)(
       implicit s3: S3AsyncClient
     ): Task[List[PutObjectAclResponse]] =
