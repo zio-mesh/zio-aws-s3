@@ -25,123 +25,144 @@ import java.io.IOException
 import setup._
 import Helper._
 
-object Tests {
+object BuckSpec extends ZIOBaseSpec {
+  def spec =
+    suite("AwsSpec")(
+      suite("blah")(
+        testM("list all buckets") {
+          println(s"Using Region: ${region} and Endpoint: ${endpoint}")
+          val res = for {
+            s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
+            out <- aws.service.listBuckets(s3)
+            _   = println(out)
+          } yield out
 
-  val bucketsSuite = suite("AWS S3 Buckets suite")(
-    testM("list all buckets") {
-      println(s"Using Region: ${region} and Endpoint: ${endpoint}")
-      val res = for {
-        s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        out <- aws.service.listBuckets(s3)
-        _   = println(out)
-      } yield out
-
-      assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
-    }
-  )
-
-  val objectsSuite = suite("AWS S3 Objects suite")(
-    testM("lookup an object. True if present") {
-      val res = for {
-        s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        out <- aws.service.lookupObject(bucket, prefix, key)(s3)
-        _   = println(s"Found objects: ${out}")
-      } yield out
-
-      assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
-    },
-    testM("list all keys, related to a specific prefix") {
-      val res = for {
-        s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        out <- aws.service.listObjectsKeys(bucket, prefix)(s3)
-        _   = println(out)
-      } yield out
-
-      assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
-    }
-  )
-  val delSuite = suite("Delete suite")(
-    testM("list and delete object") {
-      val res = for {
-        s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        out <- aws.service.listObjectsKeys(bucket, prefix)(s3)
-        _   = println(out)
-        _   = println("**** Carefully ! This method will ACTUALLY remove your AWS content !!!! ***")
-        _   = println("*** If you REALLY wanna remove it, uncomment the line below ***")
-        // _   <- aws.service.delAllObjects(bucket, prefix)(s3)
-
-      } yield ()
-
-      assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
-    }
-  )
-
-  val redirSuite = suite("Redirection suite")(
-    testM("set a single object redirection") {
-      val res = for {
-        s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        out <- aws.service.redirectObject(bucket, prefix, fullKey, url)(s3)
-        _   = println(out)
-      } yield out
-
-      assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
-    } @@ ignore,
-    testM("set a multiple object redirection with a single prefix") {
-      val res = for {
-        s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        out <- aws.service.redirectPack(bucket, prefix, url)(s3)
-      } yield out
-
-      assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
-    }
-  )
-
-  val aclSuite = suite("ACL suite")(
-    testM("get pack ACL") {
-      val res = for {
-        s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        out <- aws.service.getPackAcl(bucket, prefix)(s3)
-        _   = println(out)
-      } yield out
-
-      assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
-    },
-    testM("set pack ACL") {
-      val res = for {
-        s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        out <- aws.service.putPackAcl(bucket, prefix, false)(s3)
-      } yield out
-
-      assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
-    } @@ ignore
-  )
-
-  val blockSuite = suite("Block suite")(
-    testM("block content pack by removing ACL grant") {
-      val res = for {
-        s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        out <- aws.service.blockPack(bucket, prefix)(s3)
-      } yield out
-
-      assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
-    } @@ ignore,
-    testM("unblock content pack by adding ACL grant") {
-      val res = for {
-        s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-        out <- aws.service.unblockPack(bucket, prefix)(s3)
-      } yield out
-
-      assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
-    }
-  )
+          assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")))(equalTo("ok"))
+        }
+      )
+    )
 }
 
-object BuckSpec extends ZIOBaseSpec(suite("Bucket Spec")(Tests.bucketsSuite))
-// object ObjSpec   extends DefaultRunnableSpec(suite("Object Spec")(Tests.objectsSuite))
-// object RedirSpec extends DefaultRunnableSpec(suite("Redirection Spec")(Tests.redirSuite))
-// object AclSpec   extends DefaultRunnableSpec(suite("ACL Spec")(Tests.aclSuite))
-// object DelSpec   extends DefaultRunnableSpec(suite("Redirection Spec")(Tests.delSuite))
-// object BlockSpec extends DefaultRunnableSpec(suite("Blocking Spec")(Tests.blockSuite))
+object ObjSpec extends ZIOBaseSpec {
+  def spec =
+    suite("AwsSpec")(
+      suite("blah")(
+        testM("lookup an object. True if present") {
+          val res = for {
+            s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
+            out <- aws.service.lookupObject(bucket, prefix, key)(s3)
+            _   = println(s"Found objects: ${out}")
+          } yield out
+
+          assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")))(equalTo("ok"))
+        },
+        testM("list all keys, related to a specific prefix") {
+          val res = for {
+            s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
+            out <- aws.service.listObjectsKeys(bucket, prefix)(s3)
+            _   = println(out)
+          } yield out
+
+          assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")))(equalTo("ok"))
+        }
+      )
+    )
+}
+
+object DelSpec extends ZIOBaseSpec {
+  def spec =
+    suite("AwsSpec")(
+      suite("blah")(
+        testM("list and delete object") {
+          val res = for {
+            s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
+            out <- aws.service.listObjectsKeys(bucket, prefix)(s3)
+            _   = println(out)
+            _   = println("**** Carefully ! This method will ACTUALLY remove your AWS content !!!! ***")
+            _   = println("*** If you REALLY wanna remove it, uncomment the line below ***")
+            // _   <- aws.service.delAllObjects(bucket, prefix)(s3)
+
+          } yield ()
+
+          assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")))(equalTo("ok"))
+        }
+      )
+    )
+}
+
+object RedirSpec extends ZIOBaseSpec {
+  def spec =
+    suite("AwsSpec")(
+      suite("blah")(
+        testM("set a single object redirection") {
+          val res = for {
+            s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
+            out <- aws.service.redirectObject(bucket, prefix, fullKey, url)(s3)
+            _   = println(out)
+          } yield out
+
+          assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")))(equalTo("ok"))
+        } @@ ignore,
+        testM("set a multiple object redirection with a single prefix") {
+          val res = for {
+            s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
+            out <- aws.service.redirectPack(bucket, prefix, url)(s3)
+          } yield out
+
+          assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")))(equalTo("ok"))
+        }
+      )
+    )
+}
+
+object AclSpec extends ZIOBaseSpec {
+  def spec =
+    suite("AwsSpec")(
+      suite("blah")(
+        testM("get pack ACL") {
+          val res = for {
+            s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
+            out <- aws.service.getPackAcl(bucket, prefix)(s3)
+            _   = println(out)
+          } yield out
+
+          assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")))(equalTo("ok"))
+        },
+        testM("set pack ACL") {
+          val res = for {
+            s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
+            out <- aws.service.putPackAcl(bucket, prefix, false)(s3)
+          } yield out
+
+          assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")))(equalTo("ok"))
+        } @@ ignore
+      )
+    )
+}
+
+object BlockSpec extends ZIOBaseSpec {
+  def spec =
+    suite("AwsSpec")(
+      suite("blah")(
+        testM("block content pack by removing ACL grant") {
+          val res = for {
+            s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
+            out <- aws.service.blockPack(bucket, prefix)(s3)
+          } yield out
+
+          assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")))(equalTo("ok"))
+        } @@ ignore,
+        testM("unblock content pack by adding ACL grant") {
+          val res = for {
+            s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
+            out <- aws.service.unblockPack(bucket, prefix)(s3)
+          } yield out
+
+          assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")))(equalTo("ok"))
+        }
+      )
+    )
+}
 
 object Helper {
   import java.nio.file.{ Files }
@@ -154,12 +175,10 @@ object Helper {
     Files.createFile(path).toFile
   }
 
-  val aws    = new AwsLink {}
-  val key    = "42x42.jpg"
-  val url    = "backup"
-  val prefix = "media/uploads/images/cf3a53e4-37bd-11ea-b430-6f9a089d05d1"
-  // val prefix = "media/uploads/images/a3565a30-e465-11e9-a274-456d87bf0d45"
-  // val prefix  = "media/uploads/images/dea5c048-37bd-11ea-8194-399b761e9b96"
+  val aws     = new AwsLink {}
+  val key     = "42x42.jpg"
+  val url     = "backup"
+  val prefix  = "media/uploads/images/cf3a53e4-37bd-11ea-b430-6f9a089d05d1"
   val fullKey = prefix + "/" + key
 
 }
