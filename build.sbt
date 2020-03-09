@@ -35,7 +35,10 @@ lazy val zioDeps = libraryDependencies ++= Seq(
   "dev.zio" %% "zio-test-sbt" % zioVersion % "test"
 )
 
-lazy val commonDeps = libraryDependencies ++= Seq()
+lazy val commonDeps = libraryDependencies ++= Seq(
+  compilerPlugin("com.github.ghik" % "silencer-plugin" % "1.5.0" cross CrossVersion.full),
+  "com.github.ghik" % "silencer-lib" % "1.5.0" % Provided cross CrossVersion.full
+)
 
 // *****************************************************************************
 // Settings
