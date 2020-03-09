@@ -89,9 +89,7 @@ class AwsLink extends GenericLink {
       }
 
     def listBuckets(implicit s3: S3AsyncClient): Task[ListBucketsResponse] =
-      IO.effectAsync[Throwable, ListBucketsResponse] { callback =>
-        processResponse(s3.listBuckets, callback)
-      }
+      IO.effectAsync[Throwable, ListBucketsResponse](callback => processResponse(s3.listBuckets, callback))
 
     def listBucketObjects(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[ListObjectsV2Response] =
       for {
@@ -134,9 +132,7 @@ class AwsLink extends GenericLink {
 
       println(s">>>>>> Get ACL for key: ${key}")
 
-      IO.effectAsync[Throwable, GetObjectAclResponse] { callback =>
-          processResponse(s3.getObjectAcl(req), callback)
-        }
+      IO.effectAsync[Throwable, GetObjectAclResponse](callback => processResponse(s3.getObjectAcl(req), callback))
         .mapError(_ => new Throwable("Failed Processing CopyObjectResponse"))
     }
 
@@ -157,7 +153,7 @@ class AwsLink extends GenericLink {
     def redirectPack(buck: String, prefix: String, url: String)(implicit s3: S3AsyncClient): Task[Unit] =
       for {
         keys <- listObjectsKeys(buck, prefix)
-        _    = Task.traverse(keys)(key => redirectObject(buck, prefix, key, url))
+        _    = Task.foreach(keys)(key => redirectObject(buck, prefix, key, url))
       } yield ()
 
     def blockPack(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[Unit] =
@@ -169,36 +165,39 @@ class AwsLink extends GenericLink {
     def getPackAcl(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[List[GetObjectAclResponse]] =
       for {
         keys <- listObjectsKeys(buck, prefix)
-        list <- Task.traverse(keys)(key => getObjectAcl(buck, key))
+        list <- Task.foreach(keys)(key => getObjectAcl(buck, key))
       } yield list
 
     def putPackAcl(buck: String, prefix: String, block: Boolean)(
       implicit s3: S3AsyncClient
     ): Task[List[PutObjectAclResponse]] =
       for {
-        keys  <- listObjectsKeys(buck, prefix)
-        acl   <- getObjectAcl(buck, keys.head) // read ACL for the first element in a pack. Assume all others have the same ACL in the pack
+        keys <- listObjectsKeys(buck, prefix)
+        acl <- getObjectAcl(
+                buck,
+                keys.head
+              ) // read ACL for the first element in a pack. Assume all others have the same ACL in the pack
         owner = acl.owner // Evaluate owner and grants to avoid multiple calls
         grGrant <- Task.effect(
                     Grant
                       .builder()
-                      .grantee(bld => {
+                      .grantee { bld =>
                         bld
                           .id("dev-assets")
                           .`type`(Type.CANONICAL_USER)
                           .displayName("DEV Assets User")
-                      })
+                      }
                       .permission(Permission.FULL_CONTROL)
-                      .grantee(bld => {
+                      .grantee { bld =>
                         bld
                           .`type`(Type.GROUP)
                           .uri("http://acs.amazonaws.com/groups/global/AllUsers")
-                      })
+                      }
                       .permission(Permission.READ)
                       .build
                   )
         grants = if (block) List.empty[Grant] else List(grGrant)
-        list   <- Task.traverse(keys)(key => putObjectAcl(buck, key, acl.owner, grants.asJava))
+        list   <- Task.foreach(keys)(key => putObjectAcl(buck, key, acl.owner, grants.asJava))
       } yield list
 
     def redirectObject(buck: String, prefix: String, key: String, url: String)(
@@ -262,20 +261,18 @@ class AwsLink extends GenericLink {
     def delAllObjects(buck: String, prefix: String)(implicit s3: S3AsyncClient): Task[Unit] =
       for {
         keys <- listObjectsKeys(buck, prefix)
-        _ <- Task.traverse(keys) { key =>
-              delObject(buck, key)
-            }
+        _    <- Task.foreach(keys)(key => delObject(buck, key))
       } yield ()
 
     def processResponse[T](
       fut: CompletableFuture[T],
       callback: Task[T] => Unit
     ): Unit =
-      fut.handle[Unit]((response, err) => {
+      fut.handle[Unit] { (response, err) =>
         err match {
           case null => callback(IO.succeed(response))
           case ex   => callback(IO.fail(ex))
         }
-      }): Unit
+      }: Unit
   }
 }

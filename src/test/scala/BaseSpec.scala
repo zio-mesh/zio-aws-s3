@@ -17,7 +17,6 @@
 package zio_aws_s3
 
 import zio.{ ZIO }
-import zio.duration._
 import zio.test._
 import zio.test.Assertion._
 import zio.test.TestAspect._
@@ -38,7 +37,7 @@ object Tests {
       } yield out
 
       assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
-    } @@ timeout(10.seconds)
+    }
   )
 
   val objectsSuite = suite("AWS S3 Objects suite")(
@@ -50,7 +49,7 @@ object Tests {
       } yield out
 
       assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
-    } @@ timeout(10.seconds),
+    },
     testM("list all keys, related to a specific prefix") {
       val res = for {
         s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
@@ -59,7 +58,7 @@ object Tests {
       } yield out
 
       assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
-    } @@ timeout(10.seconds)
+    }
   )
   val delSuite = suite("Delete suite")(
     testM("list and delete object") {
@@ -74,7 +73,7 @@ object Tests {
       } yield ()
 
       assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
-    } @@ timeout(10.seconds)
+    }
   )
 
   val redirSuite = suite("Redirection suite")(
@@ -86,7 +85,7 @@ object Tests {
       } yield out
 
       assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
-    } @@ timeout(10.seconds) @@ ignore,
+    } @@ ignore,
     testM("set a multiple object redirection with a single prefix") {
       val res = for {
         s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
@@ -94,7 +93,7 @@ object Tests {
       } yield out
 
       assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
-    } @@ timeout(10.seconds)
+    }
   )
 
   val aclSuite = suite("ACL suite")(
@@ -106,7 +105,7 @@ object Tests {
       } yield out
 
       assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
-    } @@ timeout(10.seconds),
+    },
     testM("set pack ACL") {
       val res = for {
         s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
@@ -114,7 +113,7 @@ object Tests {
       } yield out
 
       assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
-    } @@ timeout(10.seconds) @@ ignore
+    } @@ ignore
   )
 
   val blockSuite = suite("Block suite")(
@@ -125,7 +124,7 @@ object Tests {
       } yield out
 
       assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
-    } @@ timeout(10.seconds) @@ ignore,
+    } @@ ignore,
     testM("unblock content pack by adding ACL grant") {
       val res = for {
         s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
@@ -133,16 +132,16 @@ object Tests {
       } yield out
 
       assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")), equalTo("ok"))
-    } @@ timeout(10.seconds)
+    }
   )
 }
 
-object BuckSpec  extends DefaultRunnableSpec(suite("Bucket Spec")(Tests.bucketsSuite))
-object ObjSpec   extends DefaultRunnableSpec(suite("Object Spec")(Tests.objectsSuite))
-object RedirSpec extends DefaultRunnableSpec(suite("Redirection Spec")(Tests.redirSuite))
-object AclSpec   extends DefaultRunnableSpec(suite("ACL Spec")(Tests.aclSuite))
-object DelSpec   extends DefaultRunnableSpec(suite("Redirection Spec")(Tests.delSuite))
-object BlockSpec extends DefaultRunnableSpec(suite("Blocking Spec")(Tests.blockSuite))
+object BuckSpec extends ZIOBaseSpec(suite("Bucket Spec")(Tests.bucketsSuite))
+// object ObjSpec   extends DefaultRunnableSpec(suite("Object Spec")(Tests.objectsSuite))
+// object RedirSpec extends DefaultRunnableSpec(suite("Redirection Spec")(Tests.redirSuite))
+// object AclSpec   extends DefaultRunnableSpec(suite("ACL Spec")(Tests.aclSuite))
+// object DelSpec   extends DefaultRunnableSpec(suite("Redirection Spec")(Tests.delSuite))
+// object BlockSpec extends DefaultRunnableSpec(suite("Blocking Spec")(Tests.blockSuite))
 
 object Helper {
   import java.nio.file.{ Files }

@@ -1,5 +1,12 @@
-val zioVersion = "1.0.0-RC17"
-val awsVersion = "2.10.56"
+val zioVersion = "1.0.0-RC18-1"
+val awsVersion = "2.10.81"
+
+resolvers ++= Seq(
+  Resolver.mavenLocal,
+  Resolver.jcenterRepo,
+  Resolver.sonatypeRepo("releases"),
+  Resolver.sonatypeRepo("snapshots")
+)
 
 // *****************************************************************************
 // Projects
@@ -36,8 +43,7 @@ lazy val commonDeps = libraryDependencies ++= Seq()
 
 lazy val settings =
   commonSettings ++
-    scalafmtSettings ++
-    sonatypeSettings
+    bintraySettings
 
 lazy val commonSettings =
   Seq(
@@ -57,39 +63,61 @@ lazy val commonSettings =
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
 
-lazy val scalafmtSettings =
-  Seq(
-    scalafmtOnCompile := true
-  )
+// lazy val sonatypeSettings =
+//   Seq(
+//     version := "0.4.13",
+//     sonatypeProfileName := "tampler",
+//     scmInfo := Some(
+//       ScmInfo(
+//         homepage.value.get,
+//         "scm:git@github.com:Neurodyne/zio-aws-s3.git"
+//       )
+//     ),
+//     developers := List(
+//       Developer(
+//         id = "tampler",
+//         name = "Boris V.Kuznetsov",
+//         email = "socnetfpga@gmail.com",
+//         url = url("http://github.com/tampler")
+//       )
+//     ),
+//     description := "ZIO integration with AWS S3 SDK",
+//     pomIncludeRepository := { _ =>
+//       false
+//     },
+//     publishTo := sonatypePublishToBundle.value,
+//     publishMavenStyle := true,
+//     pgpPassphrase := sys.env.get("PGP_PASSWORD").map(_.toArray),
+//     pgpPublicRing := file("/tmp/public.asc"),
+//     pgpSecretRing := file("/tmp/secret.asc")
+//   )
 
-lazy val sonatypeSettings =
-  Seq(
-    version := "0.4.13",
-    sonatypeProfileName := "tampler",
-    scmInfo := Some(
-      ScmInfo(
-        homepage.value.get,
-        "scm:git@github.com:Neurodyne/zio-aws-s3.git"
-      )
-    ),
-    developers := List(
-      Developer(
-        id = "tampler",
-        name = "Boris V.Kuznetsov",
-        email = "socnetfpga@gmail.com",
-        url = url("http://github.com/tampler")
-      )
-    ),
-    description := "ZIO integration with AWS S3 SDK",
-    pomIncludeRepository := { _ =>
-      false
-    },
-    publishTo := sonatypePublishToBundle.value,
-    publishMavenStyle := true,
-    pgpPassphrase := sys.env.get("PGP_PASSWORD").map(_.toArray),
-    pgpPublicRing := file("/tmp/public.asc"),
-    pgpSecretRing := file("/tmp/secret.asc")
-  )
+lazy val bintraySettings = Seq(
+  sbtPlugin := false,
+  transitiveClassifiers in Global := Seq(Artifact.SourceClassifier),
+  publishMavenStyle := true,
+  publishArtifact in Test := false,
+  pomIncludeRepository := { _ => false },
+  version := "0.4.13",
+  // sonatypeProfileName := "tampler",
+  // scmInfo := Some(
+  //   ScmInfo(
+  //     homepage.value.get,
+  //     "scm:git@github.com:Neurodyne/zio-aws-s3.git"
+  //   )
+  // ),
+  developers := List(
+    Developer(
+      id = "tampler",
+      name = "Boris V.Kuznetsov",
+      email = "socnetfpga@gmail.com",
+      url = url("http://github.com/tampler")
+    )
+  ),
+  description := "ZIO integration with AWS S3 SDK",
+  pomIncludeRepository := { _ => false },
+  credentials += Credentials(Path.userHome / ".bintray" / ".credentials")
+)
 
 // Aliases
 addCommandAlias("rel", "reload")
