@@ -1,5 +1,4 @@
-val zioVersion = "1.0.0-RC18-2"
-val awsVersion = "2.10.86"
+import Versions._
 
 resolvers ++= Seq(
   Resolver.mavenLocal,
@@ -9,7 +8,8 @@ resolvers ++= Seq(
 
 inThisBuild(
   List(
-    organization := "pro.github.neurodyne",
+    scalaVersion := "2.12.10",
+    organization := "io.github.neurodyne",
     homepage := Some(url("http://neurodyne.pro")),
     organizationName := "Neurodyne Systems",
     homepage := Some(url("https://github.com/Neurodyne/zio-aws-s3")),
@@ -57,8 +57,8 @@ lazy val zioDeps = libraryDependencies ++= Seq(
 )
 
 lazy val commonDeps = libraryDependencies ++= Seq(
-  compilerPlugin("com.github.ghik" % "silencer-plugin" % "1.5.0" cross CrossVersion.full),
-  "com.github.ghik" % "silencer-lib" % "1.5.0" % Provided cross CrossVersion.full
+  compilerPlugin("com.github.ghik" % "silencer-plugin" % silencerVersion cross CrossVersion.full),
+  "com.github.ghik" % "silencer-lib" % silencerVersion % Provided cross CrossVersion.full
 )
 
 // *****************************************************************************
@@ -68,7 +68,6 @@ lazy val commonDeps = libraryDependencies ++= Seq(
 lazy val commonSettings =
   Seq(
     name := "zio-aws-s3",
-    // scalaVersion is taken from .travis.yml via sbt-travisci
     Compile / unmanagedSourceDirectories := Seq((Compile / scalaSource).value),
     Test / unmanagedSourceDirectories := Seq((Test / scalaSource).value),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))

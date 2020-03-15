@@ -19,7 +19,7 @@ package zio_aws_s3
 import java.nio.file.{ Paths }
 import java.util.concurrent.CompletableFuture
 import java.net.URI
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 import com.github.ghik.silencer.silent
 
 import zio.{ IO, Task }
@@ -266,6 +266,7 @@ class AwsLink extends GenericLink {
         _    <- Task.foreach(keys)(key => delObject(buck, key))
       } yield ()
 
+    @silent("discarded non-Unit value")
     def processResponse[T](
       fut: CompletableFuture[T],
       callback: Task[T] => Unit
