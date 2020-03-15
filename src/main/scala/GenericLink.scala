@@ -126,17 +126,17 @@ object GenericLink {
     def delObject(buck: String, key: String)(implicit s3: S3AsyncClient): AwsTask[DeleteObjectResponse]
 
     /**
-     * Delete all objects
+     * Delete all objects which share the same prefix
      */
     def delAllObjects(buck: String, prefix: String)(implicit s3: S3AsyncClient): AwsTask[Unit]
 
     /**
-     * get current ACL settings
+     * Get current ACL settings
      */
     def getObjectAcl(buck: String, key: String)(implicit s3: S3AsyncClient): AwsTask[GetObjectAclResponse]
 
     /**
-     * put new ACL settings
+     * Put new ACL settings
      */
     def putObjectAcl(buck: String, key: String, owner: Owner, grants: JList[Grant])(
       implicit s3: S3AsyncClient
