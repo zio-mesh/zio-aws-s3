@@ -13,9 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package zio_aws_s3
-
 package zio_aws_s3
 
 import java.nio.file.{ Paths }
@@ -70,13 +67,16 @@ object TempApp {
 
   object TempLink {
 
-    trait Service[R] extends GenericLink[R] {}
+    trait Service[R] extends GenericLink[R] {
+      def ping(): Unit
+    }
 
     val any: ZLayer[TempLink, Nothing, TempLink] =
       ZLayer.requires[TempLink]
 
     val live: ZLayer[ExtDeps, Throwable, TempLink] = ZLayer.fromService { (deps: ExtDeps.Service) =>
       new Service[Any] {
+        def ping() = println("Hi")
 
         def createBucket(buck: String): Task[CreateBucketResponse] =
           IO.effectAsync[Throwable, CreateBucketResponse] { callback =>
