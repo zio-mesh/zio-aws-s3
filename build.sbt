@@ -67,6 +67,7 @@ lazy val commonDeps = libraryDependencies ++= Seq(
 
 lazy val commonSettings =
   Seq(
+    scalacOptions -= "-Xfatal-warnings",
     name := "zio-aws-s3",
     version := "0.4.12",
     Compile / unmanagedSourceDirectories := Seq((Compile / scalaSource).value),
