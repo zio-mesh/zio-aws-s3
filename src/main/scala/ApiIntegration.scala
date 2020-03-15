@@ -16,14 +16,14 @@
 
 package zio_aws_s3
 
-import zio.{ DefaultRuntime }
+import zio.{ Runtime }
 import zio.console.putStrLn
 import setup._
 import java.io.IOException
 
 object App0 extends App {
 
-  val rt     = new DefaultRuntime {}
+  val rt     = Runtime.default
   val prefix = "media/uploads/images/cf3a53e4-37bd-11ea-b430-6f9a089d05d1"
   val aws    = new AwsLink {}
 

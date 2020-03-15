@@ -1,11 +1,32 @@
-val zioVersion = "1.0.0-RC18-1"
-val awsVersion = "2.10.81"
+val zioVersion = "1.0.0-RC18-2"
+val awsVersion = "2.10.86"
 
 resolvers ++= Seq(
   Resolver.mavenLocal,
-  Resolver.jcenterRepo,
   Resolver.sonatypeRepo("releases"),
   Resolver.sonatypeRepo("snapshots")
+)
+
+inThisBuild(
+  List(
+    organization := "pro.github.neurodyne",
+    homepage := Some(url("http://neurodyne.pro")),
+    organizationName := "Neurodyne Systems",
+    homepage := Some(url("https://github.com/Neurodyne/zio-aws-s3")),
+    startYear := Some(2019),
+    licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
+    developers := List(
+      Developer(
+        "tampler",
+        "Boris V.Kuznetsov",
+        "socnetfpga@gmail.com",
+        url("https://github.com/tampler")
+      )
+    ),
+    scmInfo := Some(
+      ScmInfo(url("https://github.com/Neurodyne/zio-arrow"), "scm:git@github.com:Neurodyne/zio-arrow.git")
+    )
+  )
 )
 
 // *****************************************************************************
@@ -16,7 +37,7 @@ lazy val root =
   project
     .in(file("."))
     .enablePlugins(AutomateHeaderPlugin)
-    .settings(settings)
+    .settings(commonSettings)
     .settings(
       commonDeps,
       zioDeps,
@@ -44,86 +65,20 @@ lazy val commonDeps = libraryDependencies ++= Seq(
 // Settings
 // *****************************************************************************
 
-lazy val settings =
-  commonSettings ++
-    bintraySettings
-
 lazy val commonSettings =
   Seq(
-    // scalaVersion is taken from .travis.yml via sbt-travisci
     name := "zio-aws-s3",
-    organization := "com.neurodyne",
-    organizationName := "Neurodyne Systems",
-    startYear := Some(2019),
-    licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0")),
-    homepage := Some(url("https://github.com/Neurodyne/zio-aws-s3")),
-    scalacOptions --= Seq(
-      "-Xfatal-warnings",
-      "-Ywarn-value-discard"
-    ),
+    // scalaVersion is taken from .travis.yml via sbt-travisci
     Compile / unmanagedSourceDirectories := Seq((Compile / scalaSource).value),
     Test / unmanagedSourceDirectories := Seq((Test / scalaSource).value),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
 
-// lazy val sonatypeSettings =
-//   Seq(
-//     version := "0.4.13",
-//     sonatypeProfileName := "tampler",
-//     scmInfo := Some(
-//       ScmInfo(
-//         homepage.value.get,
-//         "scm:git@github.com:Neurodyne/zio-aws-s3.git"
-//       )
-//     ),
-//     developers := List(
-//       Developer(
-//         id = "tampler",
-//         name = "Boris V.Kuznetsov",
-//         email = "socnetfpga@gmail.com",
-//         url = url("http://github.com/tampler")
-//       )
-//     ),
-//     description := "ZIO integration with AWS S3 SDK",
-//     pomIncludeRepository := { _ =>
-//       false
-//     },
-//     publishTo := sonatypePublishToBundle.value,
-//     publishMavenStyle := true,
-//     pgpPassphrase := sys.env.get("PGP_PASSWORD").map(_.toArray),
-//     pgpPublicRing := file("/tmp/public.asc"),
-//     pgpSecretRing := file("/tmp/secret.asc")
-//   )
-
-lazy val bintraySettings = Seq(
-  sbtPlugin := false,
-  transitiveClassifiers in Global := Seq(Artifact.SourceClassifier),
-  publishMavenStyle := true,
-  publishArtifact in Test := false,
-  pomIncludeRepository := { _ => false },
-  version := "0.4.13",
-  // sonatypeProfileName := "tampler",
-  // scmInfo := Some(
-  //   ScmInfo(
-  //     homepage.value.get,
-  //     "scm:git@github.com:Neurodyne/zio-aws-s3.git"
-  //   )
-  // ),
-  developers := List(
-    Developer(
-      id = "tampler",
-      name = "Boris V.Kuznetsov",
-      email = "socnetfpga@gmail.com",
-      url = url("http://github.com/tampler")
-    )
-  ),
-  description := "ZIO integration with AWS S3 SDK",
-  pomIncludeRepository := { _ => false },
-  credentials += Credentials(Path.userHome / ".bintray" / ".credentials")
-)
+publishTo := sonatypePublishToBundle.value
 
 // Aliases
 addCommandAlias("rel", "reload")
 addCommandAlias("com", "compile")
 addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
 addCommandAlias("fix", "all compile:scalafix test:scalafix")
+addCommandAlias("pub", "; publishSigned; sonatypeBundleRelease")
