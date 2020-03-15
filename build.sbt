@@ -24,7 +24,7 @@ inThisBuild(
       )
     ),
     scmInfo := Some(
-      ScmInfo(url("https://github.com/Neurodyne/zio-arrow"), "scm:git@github.com:Neurodyne/zio-arrow.git")
+      ScmInfo(url("https://github.com/Neurodyne/zio-aws-s3"), "scm:git@github.com:Neurodyne/zio-aws-s3.git")
     )
   )
 )
@@ -68,10 +68,25 @@ lazy val commonDeps = libraryDependencies ++= Seq(
 lazy val commonSettings =
   Seq(
     name := "zio-aws-s3",
+    version := "0.4.12",
     Compile / unmanagedSourceDirectories := Seq((Compile / scalaSource).value),
     Test / unmanagedSourceDirectories := Seq((Test / scalaSource).value),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
+
+lazy val docs = project // new documentation project
+  .in(file("zio-aws-s3-docs"))
+  .settings(
+    skip.in(publish) := true,
+    moduleName := "zio-aws-s3-docs",
+    scalacOptions -= "-Yno-imports",
+    scalacOptions -= "-Xfatal-warnings",
+    libraryDependencies ++= Seq(
+      "dev.zio" %% "zio" % zioVersion
+    )
+  )
+  .dependsOn(root)
+  .enablePlugins(MdocPlugin)
 
 publishTo := sonatypePublishToBundle.value
 
