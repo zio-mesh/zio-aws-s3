@@ -58,42 +58,48 @@ import java.util.{ List => JList }
 
 object TempApp {
 
+  type ExtDeps = Has[ExtDeps.Service]
+
+  object ExtDeps {
+    trait Service {
+      val s3: S3AsyncClient
+    }
+  }
+
   type TempLink = Has[TempLink.Service[Any]]
 
   object TempLink {
 
-    trait Service[R] extends GenericLink[R] {
-      val s3: S3AsyncClient
-    }
+    trait Service[R] extends GenericLink[R] {}
 
     val any: ZLayer[TempLink, Nothing, TempLink] =
       ZLayer.requires[TempLink]
 
-    val live: ZLayer[S3AsyncClient, Throwable, TempLink] = ZLayer.succeed {
+    val live: ZLayer[ExtDeps, Throwable, TempLink] = ZLayer.fromService { (deps: ExtDeps.Service) =>
       new Service[Any] {
 
         def createBucket(buck: String): Task[CreateBucketResponse] =
           IO.effectAsync[Throwable, CreateBucketResponse] { callback =>
             processResponse(
-              s3.createBucket(CreateBucketRequest.builder.bucket(buck).build),
+              deps.s3.createBucket(CreateBucketRequest.builder.bucket(buck).build),
               callback
             )
           }
         def delBucket(buck: String): Task[DeleteBucketResponse] =
           IO.effectAsync[Throwable, DeleteBucketResponse] { callback =>
             processResponse(
-              s3.deleteBucket(DeleteBucketRequest.builder.bucket(buck).build),
+              deps.s3.deleteBucket(DeleteBucketRequest.builder.bucket(buck).build),
               callback
             )
           }
 
         def listBuckets: Task[ListBucketsResponse] =
-          IO.effectAsync[Throwable, ListBucketsResponse](callback => processResponse(s3.listBuckets, callback))
+          IO.effectAsync[Throwable, ListBucketsResponse](callback => processResponse(deps.s3.listBuckets, callback))
 
         def listBucketObjects(buck: String, prefix: String): Task[ListObjectsV2Response] =
           for {
             resp <- IO.effect(
-                     s3.listObjectsV2(
+                     deps.s3.listObjectsV2(
                        ListObjectsV2Request.builder
                          .bucket(buck)
                          .maxKeys(20)
@@ -131,7 +137,9 @@ object TempApp {
 
           println(s">>>>>> Get ACL for key: ${key}")
 
-          IO.effectAsync[Throwable, GetObjectAclResponse](callback => processResponse(s3.getObjectAcl(req), callback))
+          IO.effectAsync[Throwable, GetObjectAclResponse](callback =>
+              processResponse(deps.s3.getObjectAcl(req), callback)
+            )
             .mapError(_ => new Throwable("Failed Processing CopyObjectResponse"))
         }
 
@@ -142,7 +150,7 @@ object TempApp {
             req <- Task.effect(PutObjectAclRequest.builder.bucket(buck).key(key).accessControlPolicy(acl).build)
             rsp <- IO
                     .effectAsync[Throwable, PutObjectAclResponse] { callback =>
-                      processResponse(s3.putObjectAcl(req), callback)
+                      processResponse(deps.s3.putObjectAcl(req), callback)
                     }
                     .mapError(_ => new Throwable("Failed Processing PutObjectAclResponse"))
           } yield rsp
@@ -220,7 +228,7 @@ object TempApp {
                   )
             rsp <- IO
                     .effectAsync[Throwable, CopyObjectResponse] { callback =>
-                      processResponse(s3.copyObject(req), callback)
+                      processResponse(deps.s3.copyObject(req), callback)
                     }
                     .mapError(_ => new Throwable("Failed Processing CopyObjectResponse"))
           } yield rsp
@@ -229,7 +237,7 @@ object TempApp {
         def putObject(buck: String, key: String, file: String): Task[PutObjectResponse] =
           IO.effectAsync[Throwable, PutObjectResponse] { callback =>
             processResponse(
-              s3.putObject(PutObjectRequest.builder.bucket(buck).key(key).build, Paths.get(file)),
+              deps.s3.putObject(PutObjectRequest.builder.bucket(buck).key(key).build, Paths.get(file)),
               callback
             )
           }
@@ -237,7 +245,7 @@ object TempApp {
         def getObject(buck: String, key: String, file: String): Task[GetObjectResponse] =
           IO.effectAsync[Throwable, GetObjectResponse] { callback =>
             processResponse(
-              s3.getObject(GetObjectRequest.builder.bucket(buck).key(key).build, Paths.get(file)),
+              deps.s3.getObject(GetObjectRequest.builder.bucket(buck).key(key).build, Paths.get(file)),
               callback
             )
           }
@@ -245,7 +253,7 @@ object TempApp {
         def delObject(buck: String, key: String): Task[DeleteObjectResponse] =
           IO.effectAsync[Throwable, DeleteObjectResponse] { callback =>
             processResponse(
-              s3.deleteObject(DeleteObjectRequest.builder.bucket(buck).key(key).build),
+              deps.s3.deleteObject(DeleteObjectRequest.builder.bucket(buck).key(key).build),
               callback
             )
           }
