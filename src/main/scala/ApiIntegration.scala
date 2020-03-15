@@ -25,11 +25,13 @@ object App0 extends App {
 
   val rt     = Runtime.default
   val prefix = "media/uploads/images/cf3a53e4-37bd-11ea-b430-6f9a089d05d1"
-  val aws    = new AwsLink {}
+  // aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
+
+  val aws = new AwsLink {}
 
   val res = for {
     s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-    out <- aws.service.listObjectsKeys(bucket, prefix)(s3)
+    out <- aws.service.listObjectsKeys(bucket, prefix)
     _   = println(out)
   } yield out
 

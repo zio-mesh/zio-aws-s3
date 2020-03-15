@@ -16,7 +16,7 @@
 
 package zio_aws_s3
 
-import zio.{ RIO }
+import zio.{ ZIO }
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.{
@@ -42,7 +42,7 @@ trait GenericLink {
 
 object GenericLink {
   trait Service[R] {
-    type AwsTask[+A] = RIO[R, A]
+    type AwsTask[+A] = ZIO[S3AsyncClient, Throwable, A]
 
     /**
      *
@@ -57,17 +57,17 @@ object GenericLink {
     /**
      * Create S3 bucket with the given name.
      */
-    def createBucket(buck: String)(implicit s3: S3AsyncClient): AwsTask[CreateBucketResponse]
+    def createBucket(buck: String): AwsTask[CreateBucketResponse]
 
     /**
      * Delete the bucket with the given name.
      */
-    def delBucket(buck: String)(implicit s3: S3AsyncClient): AwsTask[DeleteBucketResponse]
+    def delBucket(buck: String): AwsTask[DeleteBucketResponse]
 
     /**
      * Obtain a list of all buckets owned by the authenticated sender.
      */
-    def listBuckets(implicit s3: S3AsyncClient): AwsTask[ListBucketsResponse]
+    def listBuckets: AwsTask[ListBucketsResponse]
 
     /**
      *
@@ -77,92 +77,82 @@ object GenericLink {
     /**
      * List all objects in a Bucket
      */
-    def listBucketObjects(buck: String, prefix: String)(implicit s3: S3AsyncClient): AwsTask[ListObjectsV2Response]
+    def listBucketObjects(buck: String, prefix: String): AwsTask[ListObjectsV2Response]
 
     /**
      * List all object keys in a Bucket
      */
-    def listObjectsKeys(buck: String, prefix: String)(implicit s3: S3AsyncClient): AwsTask[List[String]]
+    def listObjectsKeys(buck: String, prefix: String): AwsTask[List[String]]
 
     /**
      * Look up for an object. True if present
      */
-    def lookupObject(buck: String, prefix: String, key: String)(implicit s3: S3AsyncClient): AwsTask[Boolean]
+    def lookupObject(buck: String, prefix: String, key: String): AwsTask[Boolean]
 
     /**
      * Setup redirection for a single object
      */
-    def redirectObject(buck: String, prefix: String, key: String, url: String)(
-      implicit s3: S3AsyncClient
-    ): AwsTask[CopyObjectResponse]
+    def redirectObject(buck: String, prefix: String, key: String, url: String): AwsTask[CopyObjectResponse]
 
     /**
      * Setup redirection for all objects with a common prefix
      */
-    def redirectPack(buck: String, prefix: String, url: String)(
-      implicit s3: S3AsyncClient
-    ): AwsTask[Unit]
+    def redirectPack(buck: String, prefix: String, url: String): AwsTask[Unit]
 
     /**
      * Copy an object
      */
-    def copyObject(buck: String, dstPrefix: String, srcKey: String, dstKey: String)(
-      implicit s3: S3AsyncClient
-    ): AwsTask[CopyObjectResponse]
+    def copyObject(buck: String, dstPrefix: String, srcKey: String, dstKey: String): AwsTask[CopyObjectResponse]
 
     /**
      * Put a file with a key into a Bucket
      */
-    def putObject(buck: String, key: String, file: String)(implicit s3: S3AsyncClient): AwsTask[PutObjectResponse]
+    def putObject(buck: String, key: String, file: String): AwsTask[PutObjectResponse]
 
     /**
      * Get a file with a key from a Bucket
      */
-    def getObject(buck: String, key: String, file: String)(implicit s3: S3AsyncClient): AwsTask[GetObjectResponse]
+    def getObject(buck: String, key: String, file: String): AwsTask[GetObjectResponse]
 
     /**
      * Delete object by key from a Bucket
      */
-    def delObject(buck: String, key: String)(implicit s3: S3AsyncClient): AwsTask[DeleteObjectResponse]
+    def delObject(buck: String, key: String): AwsTask[DeleteObjectResponse]
 
     /**
      * Delete all objects which share the same prefix
      */
-    def delAllObjects(buck: String, prefix: String)(implicit s3: S3AsyncClient): AwsTask[Unit]
+    def delAllObjects(buck: String, prefix: String): AwsTask[Unit]
 
     /**
      * Get current ACL settings
      */
-    def getObjectAcl(buck: String, key: String)(implicit s3: S3AsyncClient): AwsTask[GetObjectAclResponse]
+    def getObjectAcl(buck: String, key: String): AwsTask[GetObjectAclResponse]
 
     /**
      * Put new ACL settings
      */
-    def putObjectAcl(buck: String, key: String, owner: Owner, grants: JList[Grant])(
-      implicit s3: S3AsyncClient
-    ): AwsTask[PutObjectAclResponse]
+    def putObjectAcl(buck: String, key: String, owner: Owner, grants: JList[Grant]): AwsTask[PutObjectAclResponse]
 
     /**
      * Block all objects with ACL remove permission for a group of objects under the common path
      */
-    def blockPack(buck: String, prefix: String)(implicit s3: S3AsyncClient): AwsTask[Unit]
+    def blockPack(buck: String, prefix: String): AwsTask[Unit]
 
     /**
      * Unblock all objects with ACL remove permission for a group of objects under the common path
      */
-    def unblockPack(buck: String, prefix: String)(implicit s3: S3AsyncClient): AwsTask[Unit]
+    def unblockPack(buck: String, prefix: String): AwsTask[Unit]
 
     /**
      * Get ACL for each object in a path
      */
-    def getPackAcl(buck: String, prefix: String)(implicit s3: S3AsyncClient): AwsTask[List[GetObjectAclResponse]]
+    def getPackAcl(buck: String, prefix: String): AwsTask[List[GetObjectAclResponse]]
 
     /**
      * Put ACL for each object in a path
      */
-    def putPackAcl(buck: String, prefix: String, block: Boolean)(
-      implicit s3: S3AsyncClient
-    ): AwsTask[List[PutObjectAclResponse]]
+    def putPackAcl(buck: String, prefix: String, block: Boolean): AwsTask[List[PutObjectAclResponse]]
 
   }
 }
