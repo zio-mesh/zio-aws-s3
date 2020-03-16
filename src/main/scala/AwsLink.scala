@@ -87,16 +87,16 @@ package object AwsApp {
     val live = ZLayer.fromFunction((curr: S3AsyncClient) => new ExtDeps.Service { val s3 = curr })
   }
 
-  type TempLink = Has[TempLink.Service[Any]]
+  type AwsLink = Has[AwsLink.Service[Any]]
 
-  object TempLink {
+  object AwsLink {
 
     trait Service[R] extends GenericLink[R] {}
 
-    val any: ZLayer[TempLink, Nothing, TempLink] =
-      ZLayer.requires[TempLink]
+    val any: ZLayer[AwsLink, Nothing, AwsLink] =
+      ZLayer.requires[AwsLink]
 
-    val live: ZLayer[ExtDeps, Throwable, TempLink] = ZLayer.fromService { (deps: ExtDeps.Service) =>
+    val live: ZLayer[ExtDeps, Throwable, AwsLink] = ZLayer.fromService { (deps: ExtDeps.Service) =>
       new Service[Any] {
 
         def createBucket(buck: String): Task[CreateBucketResponse] =
@@ -300,19 +300,19 @@ package object AwsApp {
     }
 
   }
-  def createBucket(buck: String): ZIO[TempLink, Throwable, CreateBucketResponse] = ZIO.accessM(_.get.createBucket(buck))
+  def createBucket(buck: String): ZIO[AwsLink, Throwable, CreateBucketResponse] = ZIO.accessM(_.get.createBucket(buck))
 
-  def delBucket(buck: String): ZIO[TempLink, Throwable, DeleteBucketResponse] = ZIO.accessM(_.get.delBucket(buck))
+  def delBucket(buck: String): ZIO[AwsLink, Throwable, DeleteBucketResponse] = ZIO.accessM(_.get.delBucket(buck))
 
-  def listBuckets(): ZIO[TempLink, Throwable, ListBucketsResponse] = ZIO.accessM(_.get.listBuckets)
+  def listBuckets(): ZIO[AwsLink, Throwable, ListBucketsResponse] = ZIO.accessM(_.get.listBuckets)
 
-  def listBucketObjects(buck: String, prefix: String): ZIO[TempLink, Throwable, ListObjectsV2Response] =
+  def listBucketObjects(buck: String, prefix: String): ZIO[AwsLink, Throwable, ListObjectsV2Response] =
     ZIO.accessM(_.get.listBucketObjects(buck, prefix))
 
-  def listObjectsKeys(buck: String, prefix: String): ZIO[TempLink, Throwable, List[String]] =
+  def listObjectsKeys(buck: String, prefix: String): ZIO[AwsLink, Throwable, List[String]] =
     ZIO.accessM(_.get.listObjectsKeys(buck, prefix))
 
-  def lookupObject(buck: String, prefix: String, key: String): ZIO[TempLink, Throwable, Boolean] =
+  def lookupObject(buck: String, prefix: String, key: String): ZIO[AwsLink, Throwable, Boolean] =
     ZIO.accessM(_.get.lookupObject(buck, prefix, key))
 
   def redirectObject(
@@ -320,10 +320,10 @@ package object AwsApp {
     prefix: String,
     key: String,
     url: String
-  ): ZIO[TempLink, Throwable, CopyObjectResponse] =
+  ): ZIO[AwsLink, Throwable, CopyObjectResponse] =
     ZIO.accessM(_.get.redirectObject(buck, prefix, key, url))
 
-  def redirectPack(buck: String, prefix: String, url: String): ZIO[TempLink, Throwable, Unit] =
+  def redirectPack(buck: String, prefix: String, url: String): ZIO[AwsLink, Throwable, Unit] =
     ZIO.accessM(_.get.redirectPack(buck, prefix, url))
 
   def copyObject(
@@ -331,22 +331,22 @@ package object AwsApp {
     dstPrefix: String,
     srcKey: String,
     dstKey: String
-  ): ZIO[TempLink, Throwable, CopyObjectResponse] =
+  ): ZIO[AwsLink, Throwable, CopyObjectResponse] =
     ZIO.accessM(_.get.copyObject(buck, dstPrefix, srcKey, dstKey))
 
-  def putObject(buck: String, key: String, file: String): ZIO[TempLink, Throwable, PutObjectResponse] =
+  def putObject(buck: String, key: String, file: String): ZIO[AwsLink, Throwable, PutObjectResponse] =
     ZIO.accessM(_.get.putObject(buck, key, file))
 
-  def getObject(buck: String, key: String, file: String): ZIO[TempLink, Throwable, GetObjectResponse] =
+  def getObject(buck: String, key: String, file: String): ZIO[AwsLink, Throwable, GetObjectResponse] =
     ZIO.accessM(_.get.getObject(buck, key, file))
 
-  def delObject(buck: String, key: String): ZIO[TempLink, Throwable, DeleteObjectResponse] =
+  def delObject(buck: String, key: String): ZIO[AwsLink, Throwable, DeleteObjectResponse] =
     ZIO.accessM(_.get.delObject(buck, key))
 
-  def delAllObjects(buck: String, prefix: String): ZIO[TempLink, Throwable, Unit] =
+  def delAllObjects(buck: String, prefix: String): ZIO[AwsLink, Throwable, Unit] =
     ZIO.accessM(_.get.delAllObjects(buck, prefix))
 
-  def getObjectAcl(buck: String, key: String): ZIO[TempLink, Throwable, GetObjectAclResponse] =
+  def getObjectAcl(buck: String, key: String): ZIO[AwsLink, Throwable, GetObjectAclResponse] =
     ZIO.accessM(_.get.getObjectAcl(buck, key))
 
   def putObjectAcl(
@@ -354,19 +354,19 @@ package object AwsApp {
     key: String,
     owner: Owner,
     grants: JList[Grant]
-  ): ZIO[TempLink, Throwable, PutObjectAclResponse] =
+  ): ZIO[AwsLink, Throwable, PutObjectAclResponse] =
     ZIO.accessM(_.get.putObjectAcl(buck, key, owner, grants))
 
-  def blockPack(buck: String, prefix: String): ZIO[TempLink, Throwable, Unit] =
+  def blockPack(buck: String, prefix: String): ZIO[AwsLink, Throwable, Unit] =
     ZIO.accessM(_.get.blockPack(buck, prefix))
 
-  def unblockPack(buck: String, prefix: String): ZIO[TempLink, Throwable, Unit] =
+  def unblockPack(buck: String, prefix: String): ZIO[AwsLink, Throwable, Unit] =
     ZIO.accessM(_.get.unblockPack(buck, prefix))
 
-  def getPackAcl(buck: String, prefix: String): ZIO[TempLink, Throwable, List[GetObjectAclResponse]] =
+  def getPackAcl(buck: String, prefix: String): ZIO[AwsLink, Throwable, List[GetObjectAclResponse]] =
     ZIO.accessM(_.get.getPackAcl(buck, prefix))
 
-  def putPackAcl(buck: String, prefix: String, block: Boolean): ZIO[TempLink, Throwable, List[PutObjectAclResponse]] =
+  def putPackAcl(buck: String, prefix: String, block: Boolean): ZIO[AwsLink, Throwable, List[PutObjectAclResponse]] =
     ZIO.accessM(_.get.putPackAcl(buck, prefix, block))
 
 }

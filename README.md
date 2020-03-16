@@ -6,7 +6,7 @@ This project aims to ease ZIO integration with AWS S3, providing a clean, simple
 
 ### Major features
 
-* AWS S3 Java v2 2.10.86
+* AWS S3 Java v2 2.10.87
 * ZIO RC-18-2
 * ZIO Task wrapper for all AWS methods 
 * [Module Pattern with ZIO Layer](https://zio.dev/docs/howto/howto_use_layers) implementation 
@@ -16,7 +16,6 @@ This project aims to ease ZIO integration with AWS S3, providing a clean, simple
 ### Integration 
 `libraryDependencies += "io.github.neurodyne" %% "zio-aws-s3 % 0.4.12`
 
-Currently published for 2.12 only 
 
 ### API Reference
 1. See [[API Refenrece]](docs/Api.md)

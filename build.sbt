@@ -75,19 +75,19 @@ lazy val commonSettings =
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
 
-lazy val docs = project // new documentation project
-  .in(file("zio-aws-s3-docs"))
-  .settings(
-    skip.in(publish) := true,
-    moduleName := "zio-aws-s3-docs",
-    scalacOptions -= "-Yno-imports",
-    scalacOptions -= "-Xfatal-warnings",
-    libraryDependencies ++= Seq(
-      "dev.zio" %% "zio" % zioVersion
-    )
-  )
-  .dependsOn(root)
-  .enablePlugins(MdocPlugin)
+//lazy val docs = project // new documentation project
+//  .in(file("zio-aws-s3-docs"))
+//  .settings(
+//    skip.in(publish) := true,
+//    moduleName := "zio-aws-s3-docs",
+//    scalacOptions -= "-Yno-imports",
+//    scalacOptions -= "-Xfatal-warnings",
+//    libraryDependencies ++= Seq(
+//      "dev.zio" %% "zio" % zioVersion
+//    )
+//  )
+//  .dependsOn(root)
+//  .enablePlugins(MdocPlugin)
 
 publishTo := sonatypePublishToBundle.value
 

@@ -26,7 +26,7 @@ object App0 extends App {
   val prefix = "media/uploads/images/cf3a53e4-37bd-11ea-b430-6f9a089d05d1"
 
   // Build a layered env
-  val env = AwsApp.ExtDeps.live >>> AwsApp.TempLink.live
+  val env = AwsApp.ExtDeps.live >>> AwsApp.AwsLink.live
 
   // program with Deps
   val prog = AwsApp.createBucket("my-bucket")
