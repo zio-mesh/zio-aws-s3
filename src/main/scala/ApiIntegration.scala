@@ -16,14 +16,9 @@
 
 package zio_aws_s3
 
-import zio.{ Has, Runtime, Task }
+import zio.{ Runtime }
 import zio.console.putStrLn
-import setup._
-import java.io.IOException
 import software.amazon.awssdk.services.s3.S3AsyncClient
-
-import TempApp._
-import io.netty.handler.codec.http.websocketx.extensions.WebSocketExtensionData
 
 object App0 extends App {
 
@@ -35,9 +30,7 @@ object App0 extends App {
   val client = buildClient()
   val env    = TempApp.ExtDeps.live >>> TempApp.TempLink.live
 
-  val prog = for {
-    buck <- TempApp.createBucket(("now"))
-  } yield buck
+  val prog = TempApp.createBucket("now")
 
   val runnable = prog.provideLayer(env).provide(client)
   rt.unsafeRun(runnable <* putStrLn("Done !!!"))
