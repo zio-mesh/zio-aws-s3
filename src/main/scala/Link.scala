@@ -20,7 +20,7 @@ import java.util.concurrent.CompletableFuture
 import scala.collection.JavaConverters._
 import com.github.ghik.silencer.silent
 
-import zio.{ Has, IO, Task, ZLayer }
+import zio.{ Has, IO, Task, ZIO, ZLayer }
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.{
   AccessControlPolicy,
@@ -53,7 +53,9 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.{ List => JList }
 
-object TempApp {
+import software.amazon.awssdk.regions.Region
+
+package object TempApp {
 
   type ExtDeps = Has[ExtDeps.Service]
 
@@ -61,22 +63,21 @@ object TempApp {
     trait Service {
       val s3: S3AsyncClient
     }
+
+    val live = ZLayer.fromFunction((curr: S3AsyncClient) => new ExtDeps.Service { val s3 = curr })
   }
 
   type TempLink = Has[TempLink.Service[Any]]
 
   object TempLink {
 
-    trait Service[R] extends GenericLink[R] {
-      def ping(): Unit
-    }
+    trait Service[R] extends GenericLink[R] {}
 
     val any: ZLayer[TempLink, Nothing, TempLink] =
       ZLayer.requires[TempLink]
 
     val live: ZLayer[ExtDeps, Throwable, TempLink] = ZLayer.fromService { (deps: ExtDeps.Service) =>
       new Service[Any] {
-        def ping() = println("Hi")
 
         def createBucket(buck: String): Task[CreateBucketResponse] =
           IO.effectAsync[Throwable, CreateBucketResponse] { callback =>
@@ -85,184 +86,184 @@ object TempApp {
               callback
             )
           }
-        def delBucket(buck: String): Task[DeleteBucketResponse] =
-          IO.effectAsync[Throwable, DeleteBucketResponse] { callback =>
-            processResponse(
-              deps.s3.deleteBucket(DeleteBucketRequest.builder.bucket(buck).build),
-              callback
-            )
-          }
+        // def delBucket(buck: String): Task[DeleteBucketResponse] =
+        //   IO.effectAsync[Throwable, DeleteBucketResponse] { callback =>
+        //     processResponse(
+        //       deps.s3.deleteBucket(DeleteBucketRequest.builder.bucket(buck).build),
+        //       callback
+        //     )
+        //   }
 
-        def listBuckets: Task[ListBucketsResponse] =
-          IO.effectAsync[Throwable, ListBucketsResponse](callback => processResponse(deps.s3.listBuckets, callback))
+        // def listBuckets: Task[ListBucketsResponse] =
+        //   IO.effectAsync[Throwable, ListBucketsResponse](callback => processResponse(deps.s3.listBuckets, callback))
 
-        def listBucketObjects(buck: String, prefix: String): Task[ListObjectsV2Response] =
-          for {
-            resp <- IO.effect(
-                     deps.s3.listObjectsV2(
-                       ListObjectsV2Request.builder
-                         .bucket(buck)
-                         .maxKeys(20)
-                         .prefix(prefix)
-                         .build
-                     )
-                   )
-            list <- IO.effectAsync[Throwable, ListObjectsV2Response] { callback =>
-                     processResponse(
-                       resp,
-                       callback
-                     )
-                   }
-          } yield list
+        // def listBucketObjects(buck: String, prefix: String): Task[ListObjectsV2Response] =
+        //   for {
+        //     resp <- IO.effect(
+        //              deps.s3.listObjectsV2(
+        //                ListObjectsV2Request.builder
+        //                  .bucket(buck)
+        //                  .maxKeys(20)
+        //                  .prefix(prefix)
+        //                  .build
+        //              )
+        //            )
+        //     list <- IO.effectAsync[Throwable, ListObjectsV2Response] { callback =>
+        //              processResponse(
+        //                resp,
+        //                callback
+        //              )
+        //            }
+        //   } yield list
 
-        def listObjectsKeys(buck: String, prefix: String): Task[List[String]] =
-          for {
-            list <- listBucketObjects(buck, prefix)
-            keys = list.contents.asScala.map(_.key).toList
-            _    = println(s">>>>>> Total keys found for prefix ${prefix}: ${keys.size}")
-          } yield keys
+        // def listObjectsKeys(buck: String, prefix: String): Task[List[String]] =
+        //   for {
+        //     list <- listBucketObjects(buck, prefix)
+        //     keys = list.contents.asScala.map(_.key).toList
+        //     _    = println(s">>>>>> Total keys found for prefix ${prefix}: ${keys.size}")
+        //   } yield keys
 
-        def lookupObject(buck: String, prefix: String, key: String): Task[Boolean] =
-          for {
-            list   <- listBucketObjects(buck, prefix)
-            newKey = prefix + "/" + key
-            res = list.contents.asScala
-              .filter(_.key == newKey)
-              .nonEmpty
-            _ = println(res)
-          } yield res
+        // def lookupObject(buck: String, prefix: String, key: String): Task[Boolean] =
+        //   for {
+        //     list   <- listBucketObjects(buck, prefix)
+        //     newKey = prefix + "/" + key
+        //     res = list.contents.asScala
+        //       .filter(_.key == newKey)
+        //       .nonEmpty
+        //     _ = println(res)
+        //   } yield res
 
-        def getObjectAcl(buck: String, key: String): Task[GetObjectAclResponse] = {
-          val req = GetObjectAclRequest.builder.bucket(buck).key(key).build
+        // def getObjectAcl(buck: String, key: String): Task[GetObjectAclResponse] = {
+        //   val req = GetObjectAclRequest.builder.bucket(buck).key(key).build
 
-          println(s">>>>>> Get ACL for key: ${key}")
+        //   println(s">>>>>> Get ACL for key: ${key}")
 
-          IO.effectAsync[Throwable, GetObjectAclResponse](callback =>
-              processResponse(deps.s3.getObjectAcl(req), callback)
-            )
-            .mapError(_ => new Throwable("Failed Processing CopyObjectResponse"))
-        }
+        //   IO.effectAsync[Throwable, GetObjectAclResponse](callback =>
+        //       processResponse(deps.s3.getObjectAcl(req), callback)
+        //     )
+        //     .mapError(_ => new Throwable("Failed Processing CopyObjectResponse"))
+        // }
 
-        def putObjectAcl(buck: String, key: String, owner: Owner, grants: JList[Grant]): Task[PutObjectAclResponse] =
-          for {
-            acl <- Task.effect(AccessControlPolicy.builder.owner(owner).grants(grants).build)
-            _   = println(s">>>>>> PUT ACL for key: ${key}")
-            req <- Task.effect(PutObjectAclRequest.builder.bucket(buck).key(key).accessControlPolicy(acl).build)
-            rsp <- IO
-                    .effectAsync[Throwable, PutObjectAclResponse] { callback =>
-                      processResponse(deps.s3.putObjectAcl(req), callback)
-                    }
-                    .mapError(_ => new Throwable("Failed Processing PutObjectAclResponse"))
-          } yield rsp
+        // def putObjectAcl(buck: String, key: String, owner: Owner, grants: JList[Grant]): Task[PutObjectAclResponse] =
+        //   for {
+        //     acl <- Task.effect(AccessControlPolicy.builder.owner(owner).grants(grants).build)
+        //     _   = println(s">>>>>> PUT ACL for key: ${key}")
+        //     req <- Task.effect(PutObjectAclRequest.builder.bucket(buck).key(key).accessControlPolicy(acl).build)
+        //     rsp <- IO
+        //             .effectAsync[Throwable, PutObjectAclResponse] { callback =>
+        //               processResponse(deps.s3.putObjectAcl(req), callback)
+        //             }
+        //             .mapError(_ => new Throwable("Failed Processing PutObjectAclResponse"))
+        //   } yield rsp
 
-        def redirectPack(buck: String, prefix: String, url: String): Task[Unit] =
-          for {
-            keys <- listObjectsKeys(buck, prefix)
-            _    = Task.foreach(keys)(key => redirectObject(buck, prefix, key, url))
-          } yield ()
+        // def redirectPack(buck: String, prefix: String, url: String): Task[Unit] =
+        //   for {
+        //     keys <- listObjectsKeys(buck, prefix)
+        //     _    = Task.foreach(keys)(key => redirectObject(buck, prefix, key, url))
+        //   } yield ()
 
-        def blockPack(buck: String, prefix: String): Task[Unit] =
-          putPackAcl(buck, prefix, true).as(())
+        // def blockPack(buck: String, prefix: String): Task[Unit] =
+        //   putPackAcl(buck, prefix, true).as(())
 
-        def unblockPack(buck: String, prefix: String): Task[Unit] =
-          putPackAcl(buck, prefix, false).as(())
+        // def unblockPack(buck: String, prefix: String): Task[Unit] =
+        //   putPackAcl(buck, prefix, false).as(())
 
-        def getPackAcl(buck: String, prefix: String): Task[List[GetObjectAclResponse]] =
-          for {
-            keys <- listObjectsKeys(buck, prefix)
-            list <- Task.foreach(keys)(key => getObjectAcl(buck, key))
-          } yield list
+        // def getPackAcl(buck: String, prefix: String): Task[List[GetObjectAclResponse]] =
+        //   for {
+        //     keys <- listObjectsKeys(buck, prefix)
+        //     list <- Task.foreach(keys)(key => getObjectAcl(buck, key))
+        //   } yield list
 
-        @silent("discarded non-Unit value")
-        def putPackAcl(buck: String, prefix: String, block: Boolean): Task[List[PutObjectAclResponse]] =
-          for {
-            keys <- listObjectsKeys(buck, prefix)
-            acl <- getObjectAcl(
-                    buck,
-                    keys.head
-                  ) // read ACL for the first element in a pack. Assume all others have the same ACL in the pack
-            owner = acl.owner // Evaluate owner and grants to avoid multiple calls
-            grGrant <- Task.effect(
-                        Grant
-                          .builder()
-                          .grantee { bld =>
-                            bld
-                              .id("dev-assets")
-                              .`type`(Type.CANONICAL_USER)
-                              .displayName("DEV Assets User")
-                          }
-                          .permission(Permission.FULL_CONTROL)
-                          .grantee { bld =>
-                            bld
-                              .`type`(Type.GROUP)
-                              .uri("http://acs.amazonaws.com/groups/global/AllUsers")
-                          }
-                          .permission(Permission.READ)
-                          .build
-                      )
-            grants = if (block) List.empty[Grant] else List(grGrant)
-            list   <- Task.foreach(keys)(key => putObjectAcl(buck, key, acl.owner, grants.asJava))
-          } yield list
+        // @silent("discarded non-Unit value")
+        // def putPackAcl(buck: String, prefix: String, block: Boolean): Task[List[PutObjectAclResponse]] =
+        //   for {
+        //     keys <- listObjectsKeys(buck, prefix)
+        //     acl <- getObjectAcl(
+        //             buck,
+        //             keys.head
+        //           ) // read ACL for the first element in a pack. Assume all others have the same ACL in the pack
+        //     owner = acl.owner // Evaluate owner and grants to avoid multiple calls
+        //     grGrant <- Task.effect(
+        //                 Grant
+        //                   .builder()
+        //                   .grantee { bld =>
+        //                     bld
+        //                       .id("dev-assets")
+        //                       .`type`(Type.CANONICAL_USER)
+        //                       .displayName("DEV Assets User")
+        //                   }
+        //                   .permission(Permission.FULL_CONTROL)
+        //                   .grantee { bld =>
+        //                     bld
+        //                       .`type`(Type.GROUP)
+        //                       .uri("http://acs.amazonaws.com/groups/global/AllUsers")
+        //                   }
+        //                   .permission(Permission.READ)
+        //                   .build
+        //               )
+        //     grants = if (block) List.empty[Grant] else List(grGrant)
+        //     list   <- Task.foreach(keys)(key => putObjectAcl(buck, key, acl.owner, grants.asJava))
+        //   } yield list
 
-        def redirectObject(buck: String, prefix: String, key: String, url: String): Task[CopyObjectResponse] = {
-          val dstPrefix = prefix + "/" + url
-          copyObject(buck, dstPrefix, key, key) // copy each object inside the same buck, but with diff indexes
-        }
+        // def redirectObject(buck: String, prefix: String, key: String, url: String): Task[CopyObjectResponse] = {
+        //   val dstPrefix = prefix + "/" + url
+        //   copyObject(buck, dstPrefix, key, key) // copy each object inside the same buck, but with diff indexes
+        // }
 
-        def copyObject(buck: String, dstPrefix: String, srcKey: String, dstKey: String): Task[CopyObjectResponse] = {
+        // def copyObject(buck: String, dstPrefix: String, srcKey: String, dstKey: String): Task[CopyObjectResponse] = {
 
-          val src = URLEncoder.encode(buck + "/" + srcKey, StandardCharsets.UTF_8.toString)
-          val dst = URLEncoder.encode(buck + "/" + dstKey, StandardCharsets.UTF_8.toString)
+        //   val src = URLEncoder.encode(buck + "/" + srcKey, StandardCharsets.UTF_8.toString)
+        //   val dst = URLEncoder.encode(buck + "/" + dstKey, StandardCharsets.UTF_8.toString)
 
-          println(s">>>>>> Copy Src Link: ${src}")
-          println(s">>>>>> Copy Dst link: ${dst}")
+        //   println(s">>>>>> Copy Src Link: ${src}")
+        //   println(s">>>>>> Copy Dst link: ${dst}")
 
-          for {
-            req <- IO.effect(
-                    CopyObjectRequest.builder
-                      .destinationBucket(buck)
-                      .destinationKey(dstKey)
-                      .copySource(src)
-                      .websiteRedirectLocation(dst)
-                      .build
-                  )
-            rsp <- IO
-                    .effectAsync[Throwable, CopyObjectResponse] { callback =>
-                      processResponse(deps.s3.copyObject(req), callback)
-                    }
-                    .mapError(_ => new Throwable("Failed Processing CopyObjectResponse"))
-          } yield rsp
-        }
+        //   for {
+        //     req <- IO.effect(
+        //             CopyObjectRequest.builder
+        //               .destinationBucket(buck)
+        //               .destinationKey(dstKey)
+        //               .copySource(src)
+        //               .websiteRedirectLocation(dst)
+        //               .build
+        //           )
+        //     rsp <- IO
+        //             .effectAsync[Throwable, CopyObjectResponse] { callback =>
+        //               processResponse(deps.s3.copyObject(req), callback)
+        //             }
+        //             .mapError(_ => new Throwable("Failed Processing CopyObjectResponse"))
+        //   } yield rsp
+        // }
 
-        def putObject(buck: String, key: String, file: String): Task[PutObjectResponse] =
-          IO.effectAsync[Throwable, PutObjectResponse] { callback =>
-            processResponse(
-              deps.s3.putObject(PutObjectRequest.builder.bucket(buck).key(key).build, Paths.get(file)),
-              callback
-            )
-          }
+        // def putObject(buck: String, key: String, file: String): Task[PutObjectResponse] =
+        //   IO.effectAsync[Throwable, PutObjectResponse] { callback =>
+        //     processResponse(
+        //       deps.s3.putObject(PutObjectRequest.builder.bucket(buck).key(key).build, Paths.get(file)),
+        //       callback
+        //     )
+        //   }
 
-        def getObject(buck: String, key: String, file: String): Task[GetObjectResponse] =
-          IO.effectAsync[Throwable, GetObjectResponse] { callback =>
-            processResponse(
-              deps.s3.getObject(GetObjectRequest.builder.bucket(buck).key(key).build, Paths.get(file)),
-              callback
-            )
-          }
+        // def getObject(buck: String, key: String, file: String): Task[GetObjectResponse] =
+        //   IO.effectAsync[Throwable, GetObjectResponse] { callback =>
+        //     processResponse(
+        //       deps.s3.getObject(GetObjectRequest.builder.bucket(buck).key(key).build, Paths.get(file)),
+        //       callback
+        //     )
+        //   }
 
-        def delObject(buck: String, key: String): Task[DeleteObjectResponse] =
-          IO.effectAsync[Throwable, DeleteObjectResponse] { callback =>
-            processResponse(
-              deps.s3.deleteObject(DeleteObjectRequest.builder.bucket(buck).key(key).build),
-              callback
-            )
-          }
+        // def delObject(buck: String, key: String): Task[DeleteObjectResponse] =
+        //   IO.effectAsync[Throwable, DeleteObjectResponse] { callback =>
+        //     processResponse(
+        //       deps.s3.deleteObject(DeleteObjectRequest.builder.bucket(buck).key(key).build),
+        //       callback
+        //     )
+        //   }
 
-        def delAllObjects(buck: String, prefix: String): Task[Unit] =
-          for {
-            keys <- listObjectsKeys(buck, prefix)
-            _    <- Task.foreach(keys)(key => delObject(buck, key))
-          } yield ()
+        // def delAllObjects(buck: String, prefix: String): Task[Unit] =
+        //   for {
+        //     keys <- listObjectsKeys(buck, prefix)
+        //     _    <- Task.foreach(keys)(key => delObject(buck, key))
+        //   } yield ()
         @silent("discarded non-Unit value")
         def processResponse[T](
           fut: CompletableFuture[T],
@@ -276,6 +277,8 @@ object TempApp {
           }: Unit
       }
     }
+
   }
+  def createBucket(buck: String): ZIO[TempLink, Throwable, CreateBucketResponse] = ZIO.accessM(_.get.createBucket(buck))
 
 }

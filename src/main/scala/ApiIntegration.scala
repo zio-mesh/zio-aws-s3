@@ -16,39 +16,30 @@
 
 package zio_aws_s3
 
-import zio.{ Runtime, Task }
+import zio.{ Has, Runtime, Task }
 import zio.console.putStrLn
 import setup._
 import java.io.IOException
 import software.amazon.awssdk.services.s3.S3AsyncClient
 
-import TempApp.{ TempLink }
+import TempApp._
 import io.netty.handler.codec.http.websocketx.extensions.WebSocketExtensionData
 
 object App0 extends App {
 
   val rt     = Runtime.default
   val prefix = "media/uploads/images/cf3a53e4-37bd-11ea-b430-6f9a089d05d1"
-  // aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
 
-  // val aws = new AwsLink {}
+  def buildClient(): S3AsyncClient = ???
 
-  // val res = for {
-  //   s3  <- aws.service.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-  //   out <- aws.service.listObjectsKeys(bucket, prefix)
-  //   _   = println(out)
-  // } yield out
-  def buildClient(): Task[S3AsyncClient] = ???
-
-  // val env = ExtDeps.live >>>
+  val client = buildClient()
+  val env    = TempApp.ExtDeps.live >>> TempApp.TempLink.live
 
   val prog = for {
-    s3   <- buildClient()
-    deps = ???
-    buck <- TempLink.live.provideLayer(deps)
-
+    buck <- TempApp.createBucket(("now"))
   } yield buck
 
-  rt.unsafeRun(prog <* putStrLn("Done !!!"))
+  val runnable = prog.provideLayer(env).provide(client)
+  rt.unsafeRun(runnable <* putStrLn("Done !!!"))
 
 }

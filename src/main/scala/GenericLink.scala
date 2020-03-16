@@ -57,96 +57,96 @@ trait GenericLink[R] {
   /**
    * Delete the bucket with the given name.
    */
-  def delBucket(buck: String): AwsTask[DeleteBucketResponse]
+  // def delBucket(buck: String): AwsTask[DeleteBucketResponse]
 
-  /**
-   * Obtain a list of all buckets owned by the authenticated sender.
-   */
-  def listBuckets: AwsTask[ListBucketsResponse]
+  // /**
+  //  * Obtain a list of all buckets owned by the authenticated sender.
+  //  */
+  // def listBuckets: AwsTask[ListBucketsResponse]
 
-  /**
-   *
-   * Object API
-   *
-   */
-  /**
-   * List all objects in a Bucket
-   */
-  def listBucketObjects(buck: String, prefix: String): AwsTask[ListObjectsV2Response]
+  // /**
+  //  *
+  //  * Object API
+  //  *
+  //  */
+  // /**
+  //  * List all objects in a Bucket
+  //  */
+  // def listBucketObjects(buck: String, prefix: String): AwsTask[ListObjectsV2Response]
 
-  /**
-   * List all object keys in a Bucket
-   */
-  def listObjectsKeys(buck: String, prefix: String): AwsTask[List[String]]
+  // /**
+  //  * List all object keys in a Bucket
+  //  */
+  // def listObjectsKeys(buck: String, prefix: String): AwsTask[List[String]]
 
-  /**
-   * Look up for an object. True if present
-   */
-  def lookupObject(buck: String, prefix: String, key: String): AwsTask[Boolean]
+  // /**
+  //  * Look up for an object. True if present
+  //  */
+  // def lookupObject(buck: String, prefix: String, key: String): AwsTask[Boolean]
 
-  /**
-   * Setup redirection for a single object
-   */
-  def redirectObject(buck: String, prefix: String, key: String, url: String): AwsTask[CopyObjectResponse]
+  // /**
+  //  * Setup redirection for a single object
+  //  */
+  // def redirectObject(buck: String, prefix: String, key: String, url: String): AwsTask[CopyObjectResponse]
 
-  /**
-   * Setup redirection for all objects with a common prefix
-   */
-  def redirectPack(buck: String, prefix: String, url: String): AwsTask[Unit]
+  // /**
+  //  * Setup redirection for all objects with a common prefix
+  //  */
+  // def redirectPack(buck: String, prefix: String, url: String): AwsTask[Unit]
 
-  /**
-   * Copy an object
-   */
-  def copyObject(buck: String, dstPrefix: String, srcKey: String, dstKey: String): AwsTask[CopyObjectResponse]
+  // /**
+  //  * Copy an object
+  //  */
+  // def copyObject(buck: String, dstPrefix: String, srcKey: String, dstKey: String): AwsTask[CopyObjectResponse]
 
-  /**
-   * Put a file with a key into a Bucket
-   */
-  def putObject(buck: String, key: String, file: String): AwsTask[PutObjectResponse]
+  // /**
+  //  * Put a file with a key into a Bucket
+  //  */
+  // def putObject(buck: String, key: String, file: String): AwsTask[PutObjectResponse]
 
-  /**
-   * Get a file with a key from a Bucket
-   */
-  def getObject(buck: String, key: String, file: String): AwsTask[GetObjectResponse]
+  // /**
+  //  * Get a file with a key from a Bucket
+  //  */
+  // def getObject(buck: String, key: String, file: String): AwsTask[GetObjectResponse]
 
-  /**
-   * Delete object by key from a Bucket
-   */
-  def delObject(buck: String, key: String): AwsTask[DeleteObjectResponse]
+  // /**
+  //  * Delete object by key from a Bucket
+  //  */
+  // def delObject(buck: String, key: String): AwsTask[DeleteObjectResponse]
 
-  /**
-   * Delete all objects which share the same prefix
-   */
-  def delAllObjects(buck: String, prefix: String): AwsTask[Unit]
+  // /**
+  //  * Delete all objects which share the same prefix
+  //  */
+  // def delAllObjects(buck: String, prefix: String): AwsTask[Unit]
 
-  /**
-   * Get current ACL settings
-   */
-  def getObjectAcl(buck: String, key: String): AwsTask[GetObjectAclResponse]
+  // /**
+  //  * Get current ACL settings
+  //  */
+  // def getObjectAcl(buck: String, key: String): AwsTask[GetObjectAclResponse]
 
-  /**
-   * Put new ACL settings
-   */
-  def putObjectAcl(buck: String, key: String, owner: Owner, grants: JList[Grant]): AwsTask[PutObjectAclResponse]
+  // /**
+  //  * Put new ACL settings
+  //  */
+  // def putObjectAcl(buck: String, key: String, owner: Owner, grants: JList[Grant]): AwsTask[PutObjectAclResponse]
 
-  /**
-   * Block all objects with ACL remove permission for a group of objects under the common path
-   */
-  def blockPack(buck: String, prefix: String): AwsTask[Unit]
+  // /**
+  //  * Block all objects with ACL remove permission for a group of objects under the common path
+  //  */
+  // def blockPack(buck: String, prefix: String): AwsTask[Unit]
 
-  /**
-   * Unblock all objects with ACL remove permission for a group of objects under the common path
-   */
-  def unblockPack(buck: String, prefix: String): AwsTask[Unit]
+  // /**
+  //  * Unblock all objects with ACL remove permission for a group of objects under the common path
+  //  */
+  // def unblockPack(buck: String, prefix: String): AwsTask[Unit]
 
-  /**
-   * Get ACL for each object in a path
-   */
-  def getPackAcl(buck: String, prefix: String): AwsTask[List[GetObjectAclResponse]]
+  // /**
+  //  * Get ACL for each object in a path
+  //  */
+  // def getPackAcl(buck: String, prefix: String): AwsTask[List[GetObjectAclResponse]]
 
-  /**
-   * Put ACL for each object in a path
-   */
-  def putPackAcl(buck: String, prefix: String, block: Boolean): AwsTask[List[PutObjectAclResponse]]
+  // /**
+  //  * Put ACL for each object in a path
+  //  */
+  // def putPackAcl(buck: String, prefix: String, block: Boolean): AwsTask[List[PutObjectAclResponse]]
 
 }
