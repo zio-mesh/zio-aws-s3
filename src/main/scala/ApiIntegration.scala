@@ -18,21 +18,26 @@ package zio_aws_s3
 
 import zio.{ Runtime }
 import zio.console.putStrLn
-import software.amazon.awssdk.services.s3.S3AsyncClient
+import setup._
 
 object App0 extends App {
 
   val rt     = Runtime.default
   val prefix = "media/uploads/images/cf3a53e4-37bd-11ea-b430-6f9a089d05d1"
 
-  def buildClient(): S3AsyncClient = ???
+  // Build a layered env
+  val env = AwsApp.ExtDeps.live >>> AwsApp.TempLink.live
 
-  val client = buildClient()
-  val env    = TempApp.ExtDeps.live >>> TempApp.TempLink.live
+  // program with Deps
+  val prog = AwsApp.createBucket("my-bucket")
 
-  val prog = TempApp.createBucket("now")
+  // program without Env deps
+  val runnable = for {
+    s3  <- AwsAgent.createClient(region, endpoint)
+    out <- prog.provideLayer(env).provide(s3)
+    _   = println(out)
+  } yield out
 
-  val runnable = prog.provideLayer(env).provide(client)
   rt.unsafeRun(runnable <* putStrLn("Done !!!"))
 
 }

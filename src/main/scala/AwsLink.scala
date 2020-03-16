@@ -22,6 +22,7 @@ import scala.collection.JavaConverters._
 import com.github.ghik.silencer.silent
 
 import zio.{ Has, IO, Task, ZIO, ZLayer }
+import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.{
   AccessControlPolicy,
@@ -53,8 +54,25 @@ import software.amazon.awssdk.services.s3.model.{
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.{ List => JList }
+import java.net.URI
 
-package object TempApp {
+object AwsAgent {
+  def createClient(region: Region, endpoint: String): Task[S3AsyncClient] = {
+    val client =
+      if (endpoint.isEmpty)
+        S3AsyncClient.builder
+          .region(region)
+          .build
+      else
+        S3AsyncClient.builder
+          .region(region)
+          .endpointOverride(URI.create(endpoint))
+          .build
+    Task(client)
+  }
+}
+
+package object AwsApp {
 
   type ExtDeps = Has[ExtDeps.Service]
 
