@@ -83,7 +83,7 @@ object DelSpec extends BaseSpec {
             _   = println(out)
             _   = println("**** Carefully ! This method will ACTUALLY remove your AWS content !!!! ***")
             _   = println("*** If you REALLY wanna remove it, uncomment the line below ***")
-            // _   <- aws.service.delAllObjects(bucket, prefix)(s3)
+            _   <- AwsApp.delAllObjects(bucket, prefix).provideLayer(topEnv).provide(s3)
 
           } yield ()
 
@@ -152,24 +152,28 @@ object BlockSpec extends BaseSpec {
     suite("AwsSpec")(
       suite("Block Spec")(
         testM("block content pack by removing ACL grant") {
-
           val res = for {
             s3  <- AwsAgent.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
             out <- AwsApp.blockPack(bucket, prefix).provideLayer(topEnv).provide(s3)
           } yield out
 
           assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")))(equalTo("ok"))
-        } @@ ignore,
-        testM("unblock content pack by adding ACL grant") {
-
-          val res = for {
-            s3  <- AwsAgent.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
-            out <- AwsApp.unblockPack(bucket, prefix).provideLayer(topEnv).provide(s3)
-          } yield out
-
-          assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")))(equalTo("ok"))
         }
       )
+    )
+}
+
+object UnBlockSpec extends BaseSpec {
+  def spec =
+    suite("AwsSpec")(
+      testM("unblock content pack by adding ACL grant") {
+        val res = for {
+          s3  <- AwsAgent.createClient(region, endpoint).mapError(_ => new IOException("S3 client creation failed"))
+          out <- AwsApp.unblockPack(bucket, prefix).provideLayer(topEnv).provide(s3)
+        } yield out
+
+        assertM(res.foldM(_ => ZIO.fail("failed"), _ => ZIO.succeed("ok")))(equalTo("ok"))
+      }
     )
 }
 
@@ -186,7 +190,7 @@ object Helper {
 
   val key     = "42x42.jpg"
   val url     = "backup"
-  val prefix  = "media/uploads/images/cf3a53e4-37bd-11ea-b430-6f9a089d05d1"
+  val prefix  = "media/uploads/images/b6796028-7987-11ea-8882-6f295c6d861c"
   val fullKey = prefix + "/" + key
 
   // Build a layered env
