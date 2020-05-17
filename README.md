@@ -93,7 +93,7 @@ Then:
 > testOnly *BuckSpec
 ```
 
-## Commercial integration and support services are awailable
+## Commercial integration and support services are available
 
 Please open an issue with your commercial integration request
   
