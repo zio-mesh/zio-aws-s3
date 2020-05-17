@@ -57,17 +57,14 @@ import java.util.{ List => JList }
 import java.net.URI
 
 object AwsAgent {
-  def createClient(region: Region, endpoint: String): Task[S3AsyncClient] = {
-    val client =
-      if (endpoint.isEmpty)
-        S3AsyncClient.builder
-          .region(region)
-          .build
-      else
-        S3AsyncClient.builder
-          .region(region)
-          .endpointOverride(URI.create(endpoint))
-          .build
+  def createClient(region: Region, endpointOverride: Option[String] = None): Task[S3AsyncClient] = {
+    val initBuilder = S3AsyncClient.builder.region(region)
+    val client = endpointOverride
+      .map(URI.create)
+      .map(initBuilder.endpointOverride)
+      .getOrElse(initBuilder)
+      .build
+
     Task(client)
   }
 }
