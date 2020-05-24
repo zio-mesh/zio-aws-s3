@@ -170,7 +170,7 @@ package object AwsApp {
                     .effectAsync[Throwable, PutObjectAclResponse] { callback =>
                       processResponse(deps.s3.putObjectAcl(req), callback)
                     }
-                    .mapError(_ => new Throwable("Failed Processing PutObjectAclResponse"))
+                    .mapError(identity)
           } yield rsp
 
         def redirectPack(buck: String, prefix: String, url: String): Task[Unit] =
