@@ -11,12 +11,12 @@ This project aims to ease ZIO integration with AWS S3, providing a clean, simple
 
 ## Features
 
-* AWS S3 Java v2 2.10.87
-* ZIO RC-18-2
+* AWS S3 Java v2 2.13.23
+* ZIO RC-19-2
 * ZIO Module wrapper for all AWS methods
 * [Module Pattern with ZIO Layer](https://zio.dev/docs/howto/howto_use_layers) implementation
 * [ZIO Test](https://zio.dev/docs/howto/howto_test_effects) integration
-* Support for Scala 2.13.1 and 2.12.10
+* Support for Scala 2.13.2 and 2.12.11
 
 ## Integration
 
@@ -33,14 +33,14 @@ ivy"io.github.neurodyne::zio-aws-s3:$version"
 ```scala
 // build.sbt
 libraryDependencies ++= Seq(
-  "dev.zio" %% "zio" % "1.0.0-RC19",
-  "io.github.neurodyne" %% "zio-aws-s3" % "0.4.12"
+  "dev.zio" %% "zio" % "1.0.0-RC19-2",
+  "io.github.neurodyne" %% "zio-aws-s3" % "0.4.13"
 )
 
 // build.sc
 def ivyDeps = Agg(
-  ivy"dev.zio::zio:1.0.0-RC19",
-  ivy"io.github.neurodyne::zio-aws-s3:0.4.12"
+  ivy"dev.zio::zio:1.0.0-RC19-2",
+  ivy"io.github.neurodyne::zio-aws-s3:0.4.13"
 )
 ```
 
