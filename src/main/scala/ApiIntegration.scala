@@ -33,7 +33,7 @@ object App0 extends App {
 
   // program without Env deps
   val runnable = for {
-    s3  <- AwsAgent.createClient(region, endpoint)
+    s3  <- AwsAgent.createClient(region, endpointOverride)
     out <- prog.provideLayer(env).provide(s3)
     _   = println(out)
   } yield out

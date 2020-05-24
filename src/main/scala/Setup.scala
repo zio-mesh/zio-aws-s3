@@ -16,9 +16,11 @@
 
 package zio_aws_s3
 
+import scala.collection.JavaConverters._
+
 object setup {
-  val env      = System.getenv()
-  val endpoint = env.get("AWS_ENDPOINT")
-  val bucket   = env.get("AWS_BUCKET")
-  val region   = software.amazon.awssdk.regions.Region.US_EAST_1
+  val env              = System.getenv.asScala
+  val bucket           = env("AWS_BUCKET")
+  val endpointOverride = env.get("AWS_ENDPOINT_OVERRIDE")
+  val region           = software.amazon.awssdk.regions.Region.US_WEST_2
 }
