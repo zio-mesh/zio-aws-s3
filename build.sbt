@@ -23,7 +23,8 @@ inThisBuild(
     ),
     scmInfo := Some(
       ScmInfo(url("https://github.com/Neurodyne/zio-aws-s3"), "scm:git@github.com:Neurodyne/zio-aws-s3.git")
-    )
+    ),
+    pgpSecretRing := Path.userHome / ".sbt" / "gpg" / "secring.asc"
   )
 )
 
