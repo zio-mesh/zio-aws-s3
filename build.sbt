@@ -8,7 +8,7 @@ resolvers ++= Seq(
 
 inThisBuild(
   List(
-    scalaVersion := "2.12.10",
+    scalaVersion := "2.12.11",
     organization := "io.github.neurodyne",
     homepage := Some(url("https://github.com/Neurodyne/zio-aws-s3")),
     startYear := Some(2019),

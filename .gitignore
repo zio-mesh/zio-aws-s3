@@ -24,10 +24,9 @@ target
 .ensime_cache
 
 # VScode 
-.bloop
-.metals
-project/.bloop
 .vscode
+project/.bloop
+project/metals.sbt
 
 # Mac
 .DS_Store
