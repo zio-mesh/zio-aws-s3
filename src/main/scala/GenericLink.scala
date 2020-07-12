@@ -16,25 +16,11 @@
 
 package zio_aws_s3
 
-import zio.{ RIO }
-// import software.amazon.awssdk.regions.Region
-// import software.amazon.awssdk.services.s3.S3AsyncClient
-import software.amazon.awssdk.services.s3.model.{
-  CopyObjectResponse,
-  CreateBucketResponse,
-  DeleteBucketResponse,
-  DeleteObjectResponse,
-  GetObjectAclResponse,
-  GetObjectResponse,
-  Grant,
-  ListBucketsResponse,
-  ListObjectsV2Response,
-  Owner,
-  PutObjectAclResponse,
-  PutObjectResponse
-}
-
+import software.amazon.awssdk.core.async.AsyncResponseTransformer
+import zio.RIO
 import java.util.{ List => JList }
+
+import software.amazon.awssdk.services.s3.model._
 
 trait GenericLink[R] {
   type AwsTask[+A] = RIO[R, A]
@@ -108,6 +94,15 @@ trait GenericLink[R] {
    * Get a file with a key from a Bucket
    */
   def getObject(buck: String, key: String, file: String): AwsTask[GetObjectResponse]
+
+  /**
+   * Get a file with a key from a Bucket using custom response transformer
+   */
+  def getObject[G](
+    buck: String,
+    key: String,
+    transformer: AsyncResponseTransformer[GetObjectResponse, G]
+  ): AwsTask[G]
 
   /**
    * Delete object by key from a Bucket
