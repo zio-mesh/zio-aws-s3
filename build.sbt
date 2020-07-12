@@ -3,16 +3,17 @@ import Versions._
 resolvers ++= Seq(
   Resolver.mavenLocal,
   Resolver.sonatypeRepo("releases"),
-  Resolver.sonatypeRepo("snapshots")
+  Resolver.sonatypeRepo("snapshots"),
+  Resolver.jcenterRepo
 )
 
 inThisBuild(
   List(
     scalaVersion := "2.13.3",
     crossScalaVersions := Seq("2.12.11", "2.13.3"),
-    organization := "io.github.neurodyne",
-    homepage := Some(url("https://github.com/Neurodyne/zio-aws-s3")),
-    startYear := Some(2019),
+    organization := "zio.crew",
+    homepage := Some(url("https://github.com/zio-crew/zio-aws-s3")),
+    startYear := Some(2020),
     licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
     developers := List(
       Developer(
@@ -23,7 +24,7 @@ inThisBuild(
       )
     ),
     scmInfo := Some(
-      ScmInfo(url("https://github.com/Neurodyne/zio-aws-s3"), "scm:git@github.com:Neurodyne/zio-aws-s3.git")
+      ScmInfo(url("https://github.com/zio-crew/zio-aws-s3"), "scm:git@github.com:zio-crew/zio-aws-s3.git")
     )
   )
 )
@@ -36,7 +37,7 @@ lazy val core =
   project
     .in(file("."))
     .enablePlugins(AutomateHeaderPlugin)
-    .settings(commonSettings)
+    .settings(commonSettings, pubSettings)
     .settings(
       commonDeps,
       zioDeps,
@@ -72,7 +73,11 @@ lazy val commonSettings =
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
 
-publishTo := sonatypePublishToBundle.value
+lazy val pubSettings = Seq(
+  bintrayRepository := "zio-aws-s3",
+  publishMavenStyle := true,
+  bintrayOrganization := Some("zio-crew")
+)
 
 // Aliases
 addCommandAlias("rel", "reload")

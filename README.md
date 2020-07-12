@@ -46,7 +46,7 @@ def ivyDeps = Agg(
 
 ```scala
 import zio._
-import zio_aws_s3.{ AwsAgent, AwsApp }
+import zio.crew.s3.{ AwsAgent, AwsApp }
 import software.amazon.awssdk.regions.Region
 
 import scala.jdk.CollectionConverters._

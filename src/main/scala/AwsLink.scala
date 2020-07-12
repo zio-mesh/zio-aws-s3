@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 io.github.neurodyne
+ * Copyright 2020 zio.crew
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package zio_aws_s3
+package zio.crew.s3
 
 import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
@@ -55,7 +55,7 @@ import java.nio.charset.StandardCharsets
 import java.util.{ List => JList }
 import java.net.URI
 
-import zio_aws_s3.compat.JavaConverters._
+import zio.crew.s3.compat.JavaConverters._
 
 import software.amazon.awssdk.auth.credentials.{ AwsCredentials, StaticCredentialsProvider }
 import software.amazon.awssdk.core.async.AsyncResponseTransformer

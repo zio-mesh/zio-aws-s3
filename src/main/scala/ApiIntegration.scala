@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 io.github.neurodyne
+ * Copyright 2020 zio.crew
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package zio_aws_s3
+package zio.crew.s3
 
 import zio.{ Runtime }
 import zio.console.putStrLn
