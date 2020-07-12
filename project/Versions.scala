@@ -1,5 +1,5 @@
-object Versions {
-  val zioVersion      = "1.0.0-RC21-2"
-  val awsVersion      = "2.13.54"
-  val silencerVersion = "1.7.0"
+object Version {
+  val zio      = "1.0.0-RC21-2"
+  val aws      = "2.13.54"
+  val silencer = "1.7.0"
 }

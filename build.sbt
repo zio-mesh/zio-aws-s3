@@ -1,5 +1,3 @@
-import Versions._
-
 resolvers ++= Seq(
   Resolver.mavenLocal,
   Resolver.sonatypeRepo("releases"),
@@ -48,17 +46,17 @@ lazy val core =
 // Library dependencies
 // *****************************************************************************
 
-lazy val awsDeps = libraryDependencies ++= Seq("software.amazon.awssdk" % "s3" % awsVersion)
+lazy val awsDeps = libraryDependencies ++= Seq("software.amazon.awssdk" % "s3" % Version.aws)
 
 lazy val zioDeps = libraryDependencies ++= Seq(
-  "dev.zio" %% "zio"          % zioVersion,
-  "dev.zio" %% "zio-test"     % zioVersion % "test",
-  "dev.zio" %% "zio-test-sbt" % zioVersion % "test"
+  "dev.zio" %% "zio"          % Version.zio,
+  "dev.zio" %% "zio-test"     % Version.zio % "test",
+  "dev.zio" %% "zio-test-sbt" % Version.zio % "test"
 )
 
 lazy val commonDeps = libraryDependencies ++= Seq(
-  compilerPlugin("com.github.ghik" % "silencer-plugin" % silencerVersion cross CrossVersion.full),
-  "com.github.ghik" % "silencer-lib" % silencerVersion % Provided cross CrossVersion.full
+  compilerPlugin("com.github.ghik" % "silencer-plugin" % Version.silencer cross CrossVersion.full),
+  "com.github.ghik" % "silencer-lib" % Version.silencer % Provided cross CrossVersion.full
 )
 
 // *****************************************************************************
@@ -69,7 +67,7 @@ lazy val commonSettings =
   Seq(
     scalacOptions -= "-Xfatal-warnings",
     name := "zio-aws-s3",
-    version := "0.4.13",
+    version := "0.4.15",
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
 
@@ -84,4 +82,3 @@ addCommandAlias("rel", "reload")
 addCommandAlias("com", "compile")
 addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
 addCommandAlias("fix", "all compile:scalafix test:scalafix")
-addCommandAlias("pub", "; publishSigned; sonatypeBundleRelease")

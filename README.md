@@ -1,8 +1,3 @@
-[![Maven][mavenImg]][mavenLink]
-
-[mavenImg]: https://img.shields.io/maven-central/v/io.github.neurodyne/zio-aws-s3_2.13.svg
-[mavenLink]: https://mvnrepository.com/artifact/io.github.neurodyne/zio-aws-s3
-
 # zio-aws-s3
 
 Welcome to ZIO AWS S3 !
@@ -11,40 +6,25 @@ This project aims to ease ZIO integration with AWS S3, providing a clean, simple
 
 ## Features
 
-* AWS S3 Java v2 2.13.26
-* ZIO RC-20
-* ZIO Module wrapper for all AWS methods
-* [Module Pattern with ZIO Layer](https://zio.dev/docs/howto/howto_use_layers) implementation
+* The latest asynch AWS Java v2 API
+* ZIO Implementation with [Module Pattern](https://zio.dev/docs/howto/howto_use_layers)
 * [ZIO Test](https://zio.dev/docs/howto/howto_test_effects) integration
-* Support for Scala 2.13.2 and 2.12.11
+* Scala 2.12 and Scala 2.13 support 
 
 ## Integration
 
 ```scala
-"io.github.neurodyne" %% "zio-aws-s3" % version
+"zio.crew" %% "zio-aws-s3" % latestVersion
 ```
-
-```scala
-ivy"io.github.neurodyne::zio-aws-s3:$version"
-```
-
 ## Getting Started
 
 ```scala
 // build.sbt
 libraryDependencies ++= Seq(
-  "dev.zio" %% "zio" % "1.0.0-RC20",
-  "io.github.neurodyne" %% "zio-aws-s3" % "0.4.13"
+  "dev.zio" %% "zio" % "1.0.0-RC21-2",
+  "zio.crew" %% "zio-aws-s3" % latestVersion
 )
 
-// build.sc
-def ivyDeps = Agg(
-  ivy"dev.zio::zio:1.0.0-RC20",
-  ivy"io.github.neurodyne::zio-aws-s3:0.4.13"
-)
-```
-
-```scala
 import zio._
 import zio.crew.s3.{ AwsAgent, AwsApp }
 import software.amazon.awssdk.regions.Region
@@ -57,19 +37,13 @@ object Main extends App {
   val awsEnv = AwsApp.ExtDeps.live >>> AwsApp.AwsLink.live
 
   val app = for {
-    s3 <- AwsAgent.createClient(Region.US_WEST_2)
-
-    response <- AwsApp.listBuckets.provideLayer(awsEnv).provide(s3)
-
-    buckets <- Task(response.buckets.asScala.toList.map(_.name))
-
-    _ = buckets.foreach(println)
+    s3       <- AwsAgent.createClient(Region.US_WEST_2)
+    response <- AwsApp.listBuckets().provideLayer(awsEnv).provide(s3)
+    buckets  <- Task(response.buckets.asScala.toList.map(_.name))
+    _        = buckets.foreach(println)
   } yield ()
 
-  def run(args: List[String]): ZIO[ZEnv, Nothing, Int] = {
-    app.fold(_ => 1, _ => 0)
-  }
-}
+  def run(args: List[String]): URIO[Any with zio.console.Console, ExitCode] = app.exitCode
 ```
 
 ## API Reference
