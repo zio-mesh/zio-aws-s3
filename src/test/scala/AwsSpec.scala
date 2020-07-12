@@ -36,7 +36,7 @@ object BuckSpec extends BaseSpec {
             s3 <- AwsAgent
                    .createClient(region, endpointOverride)
                    .mapError(_ => new IOException("S3 client creation failed"))
-            prog <- AwsApp.listBuckets.provideLayer(topEnv).provide(s3)
+            prog <- AwsApp.listBuckets().provideLayer(topEnv).provide(s3)
           } yield prog
 
           assertM(res.foldM(ex => ZIO.fail(ex.getMessage), _ => ZIO.succeed("ok")))(equalTo("ok"))

@@ -19,7 +19,6 @@ package zio_aws_s3
 import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
 
-import scala.collection.JavaConverters._
 import com.github.ghik.silencer.silent
 import zio.{ Has, IO, RLayer, Task, URLayer, ZIO, ZLayer }
 import software.amazon.awssdk.regions.Region
@@ -55,6 +54,8 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.{ List => JList }
 import java.net.URI
+
+import zio_aws_s3.compat.JavaConverters._
 
 import software.amazon.awssdk.auth.credentials.{ AwsCredentials, StaticCredentialsProvider }
 import software.amazon.awssdk.core.async.AsyncResponseTransformer

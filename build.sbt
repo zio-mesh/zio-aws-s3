@@ -8,7 +8,8 @@ resolvers ++= Seq(
 
 inThisBuild(
   List(
-    scalaVersion := "2.12.11",
+    scalaVersion := "2.13.3",
+    crossScalaVersions := Seq("2.12.11", "2.13.3"),
     organization := "io.github.neurodyne",
     homepage := Some(url("https://github.com/Neurodyne/zio-aws-s3")),
     startYear := Some(2019),
@@ -31,7 +32,7 @@ inThisBuild(
 // Projects
 // *****************************************************************************
 
-lazy val root =
+lazy val core =
   project
     .in(file("."))
     .enablePlugins(AutomateHeaderPlugin)
@@ -68,8 +69,6 @@ lazy val commonSettings =
     scalacOptions -= "-Xfatal-warnings",
     name := "zio-aws-s3",
     version := "0.4.13",
-    Compile / unmanagedSourceDirectories := Seq((Compile / scalaSource).value),
-    Test / unmanagedSourceDirectories := Seq((Test / scalaSource).value),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
 

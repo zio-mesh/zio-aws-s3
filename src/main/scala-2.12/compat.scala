@@ -16,11 +16,6 @@
 
 package zio_aws_s3
 
-import zio_aws_s3.compat.JavaConverters._
-
-object setup {
-  val env              = System.getenv.asScala
-  val bucket           = env("AWS_BUCKET")
-  val endpointOverride = env.get("AWS_ENDPOINT_OVERRIDE")
-  val region           = software.amazon.awssdk.regions.Region.US_WEST_2
+object compat {
+  val JavaConverters = collection.JavaConverters
 }
