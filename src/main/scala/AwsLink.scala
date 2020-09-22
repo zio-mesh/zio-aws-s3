@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 zio.crew
+ * Copyright 2020 hot.crew
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import java.util.concurrent.CompletableFuture
 import scala.jdk.CollectionConverters._
 
 import com.github.ghik.silencer.silent
-import zio.{ Has, IO, Task, URLayer, ZIO, ZLayer }
+import zio.{ Has, IO, Task, URLayer, ZIO, ZLayer, ZManaged }
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.{
@@ -57,31 +57,44 @@ import java.nio.charset.StandardCharsets
 import java.util.{ List => JList }
 import java.net.URI
 
-import software.amazon.awssdk.auth.credentials.{ AwsCredentials, StaticCredentialsProvider }
+import software.amazon.awssdk.auth.credentials.{ AwsBasicCredentials, StaticCredentialsProvider }
 import software.amazon.awssdk.core.async.AsyncResponseTransformer
 
 object AwsAgent {
-  def createClient(region: Region, endpointOverride: Option[String] = None): Task[S3AsyncClient] = Task {
-    val initBuilder = S3AsyncClient.builder.region(region)
-    endpointOverride
+
+  def createClient(region: Region, endpoint: Option[String]) =
+    Task {
+      val initBuilder = S3AsyncClient.builder.region(region)
+      endpoint
+        .map(URI.create)
+        .map(initBuilder.endpointOverride)
+        .getOrElse(initBuilder)
+        .build
+    }
+
+  def createClient(
+    region: Region,
+    creds: S3Credentials,
+    endpoint: Option[String]
+  ) = Task {
+    val initBuilder = S3AsyncClient.builder
+      .region(region)
+      .credentialsProvider(
+        StaticCredentialsProvider
+          .create(AwsBasicCredentials.create(creds.accessKeyId, creds.secretAccessKey))
+      )
+    endpoint
       .map(URI.create)
       .map(initBuilder.endpointOverride)
       .getOrElse(initBuilder)
       .build
   }
 
-  def createClientWithCreds(
-    region: Region,
-    creds: AwsCredentials,
-    endpointOverride: Option[String] = None
-  ): Task[S3AsyncClient] = Task {
-    val initBuilder = S3AsyncClient.builder.region(region).credentialsProvider(StaticCredentialsProvider.create(creds))
-    endpointOverride
-      .map(URI.create)
-      .map(initBuilder.endpointOverride)
-      .getOrElse(initBuilder)
-      .build
-  }
+  def liveLayer(region: Region, endpoint: Option[String]) = ZLayer.fromEffect(createClient(region, endpoint))
+
+  def liveLayer(region: Region, creds: S3Credentials, endpoint: Option[String]) =
+    ZLayer.fromEffect(createClient(region, creds, endpoint))
+
 }
 
 object awsLink {
@@ -284,7 +297,7 @@ object awsLink {
             _    <- Task.foreach(keys)(key => delObject(buck, key))
           } yield ()
 
-        def processResponse[T](fut: CompletableFuture[T], callback: Task[T] => Unit): Unit = {
+        private def processResponse[T](fut: CompletableFuture[T], callback: Task[T] => Unit): Unit = {
           fut.handle[Unit] { (response, err) =>
             err match {
               case null => callback(IO.succeed(response))

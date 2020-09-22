@@ -16,27 +16,4 @@
 
 package hot.crew.s3
 
-import zio.{ Runtime, ZLayer }
-import hot.crew.s3.awsLink.AwsLink
-
-object App0 extends App {
-
-  val rt = Runtime.default
-
-  val key    = sys.env("AWS_ACCESS_KEY_ID")
-  val secret = sys.env("AWS_SECRET_ACCESS_KEY")
-
-  val creds = S3Credentials(key, secret)
-
-  val region   = software.amazon.awssdk.regions.Region.EU_CENTRAL_1
-  val endpoint = Option("http://localhost:9000")
-  val bucket   = "icare/mybuck"
-
-  val s3  = AwsAgent.liveLayer(region, creds, endpoint)
-  val env = s3 >>> AwsLink.live
-
-  val prog = awsLink.listBucketObjects(bucket, "").provideCustomLayer(env)
-
-  rt.unsafeRun(prog)
-
-}
+final case class S3Credentials(accessKeyId: String, secretAccessKey: String)
