@@ -1,45 +1,9 @@
-# sbt
-lib_managed
-project/project
-target
-
-# Worksheets (Eclipse or IntelliJ)
-*.sc
-
-# Eclipse
-.cache*
-.classpath
-.project
-.scala_dependencies
-.settings
-.target
-.worksheet
-
-# IntelliJ
+.bloop
+.metals
 .idea
-
-# ENSIME
-.ensime
-.ensime_lucene
-.ensime_cache
-
-# VScode 
-.vscode
-project/.bloop
+target
+project/target
+project/project
 project/metals.sbt
 
-# Mac
-.DS_Store
-
-# Akka
-ddata*
-journal
-snapshots
-.metals
-.bloop
-
-# Log files
-*.log
-
-# jenv
-.java-version
+minio
