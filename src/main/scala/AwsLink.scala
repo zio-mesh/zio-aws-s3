@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package zio.crew.s3
+package hot.crew.s3
 
 import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
 
+import scala.jdk.CollectionConverters._
+
 import com.github.ghik.silencer.silent
-import zio.{ Has, IO, RLayer, Task, URLayer, ZIO, ZLayer }
+import zio.{ Has, IO, Task, URLayer, ZIO, ZLayer }
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.{
@@ -55,8 +57,6 @@ import java.nio.charset.StandardCharsets
 import java.util.{ List => JList }
 import java.net.URI
 
-import zio.crew.s3.compat.JavaConverters._
-
 import software.amazon.awssdk.auth.credentials.{ AwsCredentials, StaticCredentialsProvider }
 import software.amazon.awssdk.core.async.AsyncResponseTransformer
 
@@ -84,37 +84,25 @@ object AwsAgent {
   }
 }
 
-package object AwsApp {
+object awsLink {
 
-  type ExtDeps = Has[ExtDeps.Service]
-
-  object ExtDeps {
-    trait Service {
-      val s3: S3AsyncClient
-    }
-
-    val any: URLayer[ExtDeps, ExtDeps] = ZLayer.requires[ExtDeps]
-
-    val live: URLayer[S3AsyncClient, Has[Service]] =
-      ZLayer.fromFunction((curr: S3AsyncClient) => new ExtDeps.Service { val s3: S3AsyncClient = curr })
-  }
-
-  type AwsLink = Has[AwsLink.Service[Any]]
+  type AwsLink = Has[AwsLink.Service]
 
   object AwsLink {
 
-    trait Service[R] extends GenericLink[R] {}
+    // Methods are defined externally
+    trait Service extends GenericLink {}
 
     val any: URLayer[AwsLink, AwsLink] =
       ZLayer.requires[AwsLink]
 
-    val live: RLayer[ExtDeps, AwsLink] = ZLayer.fromService { (deps: ExtDeps.Service) =>
-      new Service[Any] {
+    val live = ZLayer.fromService { s3: S3AsyncClient =>
+      new Service {
 
         def createBucket(buck: String): Task[CreateBucketResponse] =
           IO.effectAsync[Throwable, CreateBucketResponse] { callback =>
             processResponse(
-              deps.s3.createBucket(CreateBucketRequest.builder.bucket(buck).build),
+              s3.createBucket(CreateBucketRequest.builder.bucket(buck).build),
               callback
             )
           }
@@ -122,42 +110,42 @@ package object AwsApp {
         def delBucket(buck: String): Task[DeleteBucketResponse] =
           IO.effectAsync[Throwable, DeleteBucketResponse] { callback =>
             processResponse(
-              deps.s3.deleteBucket(DeleteBucketRequest.builder.bucket(buck).build),
+              s3.deleteBucket(DeleteBucketRequest.builder.bucket(buck).build),
               callback
             )
           }
 
         def listBuckets: Task[ListBucketsResponse] =
-          IO.effectAsync[Throwable, ListBucketsResponse](callback => processResponse(deps.s3.listBuckets, callback))
+          IO.effectAsync[Throwable, ListBucketsResponse](callback => processResponse(s3.listBuckets, callback))
 
         def listBucketObjects(buck: String, prefix: String): Task[ListObjectsV2Response] =
           for {
             resp <- IO.effect(
-                     deps.s3.listObjectsV2(
-                       ListObjectsV2Request.builder
-                         .bucket(buck)
-                         .maxKeys(20)
-                         .prefix(prefix)
-                         .build
-                     )
-                   )
+                      s3.listObjectsV2(
+                        ListObjectsV2Request.builder
+                          .bucket(buck)
+                          .maxKeys(20)
+                          .prefix(prefix)
+                          .build
+                      )
+                    )
             list <- IO.effectAsync[Throwable, ListObjectsV2Response] { callback =>
-                     processResponse(
-                       resp,
-                       callback
-                     )
-                   }
+                      processResponse(
+                        resp,
+                        callback
+                      )
+                    }
           } yield list
 
         def listObjectsKeys(buck: String, prefix: String): Task[List[String]] =
           for {
             list <- listBucketObjects(buck, prefix)
-            keys = list.contents.asScala.map(_.key).toList
+            keys  = list.contents.asScala.map(_.key).toList
           } yield keys
 
         def lookupObject(buck: String, prefix: String, key: String): Task[Boolean] =
           for {
-            list   <- listBucketObjects(buck, prefix)
+            list  <- listBucketObjects(buck, prefix)
             newKey = prefix + "/" + key
             res    = list.contents.asScala.exists(_.key == newKey)
           } yield res
@@ -165,9 +153,7 @@ package object AwsApp {
         def getObjectAcl(buck: String, key: String): Task[GetObjectAclResponse] = {
           val req = GetObjectAclRequest.builder.bucket(buck).key(key).build
 
-          IO.effectAsync[Throwable, GetObjectAclResponse](callback =>
-              processResponse(deps.s3.getObjectAcl(req), callback)
-            )
+          IO.effectAsync[Throwable, GetObjectAclResponse](callback => processResponse(s3.getObjectAcl(req), callback))
             .orElseFail(new Throwable("Failed Processing CopyObjectResponse"))
         }
 
@@ -176,16 +162,16 @@ package object AwsApp {
             acl <- Task.effect(AccessControlPolicy.builder.owner(owner).grants(grants).build)
             req <- Task.effect(PutObjectAclRequest.builder.bucket(buck).key(key).accessControlPolicy(acl).build)
             rsp <- IO
-                    .effectAsync[Throwable, PutObjectAclResponse] { callback =>
-                      processResponse(deps.s3.putObjectAcl(req), callback)
-                    }
-                    .mapError(identity)
+                     .effectAsync[Throwable, PutObjectAclResponse] { callback =>
+                       processResponse(s3.putObjectAcl(req), callback)
+                     }
+                     .mapError(identity)
           } yield rsp
 
         def redirectPack(buck: String, prefix: String, url: String): Task[Unit] =
           for {
             keys <- listObjectsKeys(buck, prefix)
-            _    = Task.foreach(keys)(key => redirectObject(buck, prefix, key, url))
+            _     = Task.foreach(keys)(key => redirectObject(buck, prefix, key, url))
           } yield ()
 
         def blockPack(buck: String, prefix: String): Task[Unit] =
@@ -205,29 +191,29 @@ package object AwsApp {
           for {
             keys <- listObjectsKeys(buck, prefix)
             acl <- getObjectAcl(
-                    buck,
-                    keys.head
-                  ) // read ACL for the first element in a pack. Assume all others have the same ACL in the pack
+                     buck,
+                     keys.head
+                   ) // read ACL for the first element in a pack. Assume all others have the same ACL in the pack
             grGrant <- Task.effect(
-                        Grant
-                          .builder()
-                          .grantee { bld: Grantee.Builder =>
-                            bld
-                              .id("dev-assets")
-                              .`type`(Type.CANONICAL_USER)
-                              .displayName("DEV Assets User")
-                          }
-                          .permission(Permission.FULL_CONTROL)
-                          .grantee { bld: Grantee.Builder =>
-                            bld
-                              .`type`(Type.GROUP)
-                              .uri("http://acs.amazonaws.com/groups/global/AllUsers")
-                          }
-                          .permission(Permission.READ)
-                          .build
-                      )
+                         Grant
+                           .builder()
+                           .grantee { bld: Grantee.Builder =>
+                             bld
+                               .id("dev-assets")
+                               .`type`(Type.CANONICAL_USER)
+                               .displayName("DEV Assets User")
+                           }
+                           .permission(Permission.FULL_CONTROL)
+                           .grantee { bld: Grantee.Builder =>
+                             bld
+                               .`type`(Type.GROUP)
+                               .uri("http://acs.amazonaws.com/groups/global/AllUsers")
+                           }
+                           .permission(Permission.READ)
+                           .build
+                       )
             grants = if (block) List.empty[Grant] else List(grGrant)
-            list   <- Task.foreach(keys)(key => putObjectAcl(buck, key, acl.owner, grants.asJava))
+            list  <- Task.foreach(keys)(key => putObjectAcl(buck, key, acl.owner, grants.asJava))
           } yield list
 
         def redirectObject(buck: String, prefix: String, key: String, url: String): Task[CopyObjectResponse] = {
@@ -242,25 +228,25 @@ package object AwsApp {
 
           for {
             req <- IO.effect(
-                    CopyObjectRequest.builder
-                      .destinationBucket(buck)
-                      .destinationKey(dstKey)
-                      .copySource(src)
-                      .websiteRedirectLocation(dst)
-                      .build
-                  )
+                     CopyObjectRequest.builder
+                       .destinationBucket(buck)
+                       .destinationKey(dstKey)
+                       .copySource(src)
+                       .websiteRedirectLocation(dst)
+                       .build
+                   )
             rsp <- IO
-                    .effectAsync[Throwable, CopyObjectResponse] { callback =>
-                      processResponse(deps.s3.copyObject(req), callback)
-                    }
-                    .orElseFail(new Throwable("Failed Processing CopyObjectResponse"))
+                     .effectAsync[Throwable, CopyObjectResponse] { callback =>
+                       processResponse(s3.copyObject(req), callback)
+                     }
+                     .orElseFail(new Throwable("Failed Processing CopyObjectResponse"))
           } yield rsp
         }
 
         def putObject(buck: String, key: String, file: String): Task[PutObjectResponse] =
           IO.effectAsync[Throwable, PutObjectResponse] { callback =>
             processResponse(
-              deps.s3.putObject(PutObjectRequest.builder.bucket(buck).key(key).build, Paths.get(file)),
+              s3.putObject(PutObjectRequest.builder.bucket(buck).key(key).build, Paths.get(file)),
               callback
             )
           }
@@ -268,7 +254,7 @@ package object AwsApp {
         def getObject(buck: String, key: String, file: String): Task[GetObjectResponse] =
           IO.effectAsync[Throwable, GetObjectResponse] { callback =>
             processResponse(
-              deps.s3.getObject(GetObjectRequest.builder.bucket(buck).key(key).build, Paths.get(file)),
+              s3.getObject(GetObjectRequest.builder.bucket(buck).key(key).build, Paths.get(file)),
               callback
             )
           }
@@ -279,7 +265,7 @@ package object AwsApp {
           transformer: AsyncResponseTransformer[GetObjectResponse, G]
         ): AwsTask[G] = IO.effectAsync { callback =>
           processResponse(
-            deps.s3.getObject(GetObjectRequest.builder.bucket(buck).key(key).build, transformer),
+            s3.getObject(GetObjectRequest.builder.bucket(buck).key(key).build, transformer),
             callback
           )
         }
@@ -287,7 +273,7 @@ package object AwsApp {
         def delObject(buck: String, key: String): Task[DeleteObjectResponse] =
           IO.effectAsync[Throwable, DeleteObjectResponse] { callback =>
             processResponse(
-              deps.s3.deleteObject(DeleteObjectRequest.builder.bucket(buck).key(key).build),
+              s3.deleteObject(DeleteObjectRequest.builder.bucket(buck).key(key).build),
               callback
             )
           }

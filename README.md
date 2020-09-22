@@ -14,7 +14,7 @@ This project aims to ease ZIO integration with AWS S3, providing a clean, simple
 ## Integration
 
 ```scala
-"zio.crew" %% "zio-aws-s3" % latestVersion
+"hot.crew" %% "zio-aws-s3" % latestVersion
 ```
 ## Getting Started
 
@@ -22,11 +22,11 @@ This project aims to ease ZIO integration with AWS S3, providing a clean, simple
 // build.sbt
 libraryDependencies ++= Seq(
   "dev.zio" %% "zio" % "1.0.0-RC21-2",
-  "zio.crew" %% "zio-aws-s3" % latestVersion
+  "hot.crew" %% "zio-aws-s3" % latestVersion
 )
 
 import zio._
-import zio.crew.s3.{ AwsAgent, AwsApp }
+import hot.crew.s3.{ AwsAgent, AwsApp }
 import software.amazon.awssdk.regions.Region
 
 import scala.jdk.CollectionConverters._

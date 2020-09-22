@@ -14,21 +14,19 @@
  * limitations under the License.
  */
 
-package zio.crew.s3
+package hot.crew.s3
 
 import software.amazon.awssdk.core.async.AsyncResponseTransformer
-import zio.RIO
+import zio.{ Task }
 import java.util.{ List => JList }
 
 import software.amazon.awssdk.services.s3.model._
 
-trait GenericLink[R] {
-  type AwsTask[+A] = RIO[R, A]
+trait GenericLink {
+  type AwsTask[A] = Task[A]
 
   /**
-   *
    * Bucket API
-   *
    */
   /**
    * Create an async S3 client.
@@ -51,9 +49,7 @@ trait GenericLink[R] {
   def listBuckets: AwsTask[ListBucketsResponse]
 
   /**
-   *
    * Object API
-   *
    */
   /**
    * List all objects in a Bucket

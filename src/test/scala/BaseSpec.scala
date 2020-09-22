@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 zio.crew
+ * Copyright 2020 hot.crew
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package zio.crew.s3
+package hot.crew.s3
 
 import zio.duration._
 import zio.test._

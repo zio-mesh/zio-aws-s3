@@ -1,15 +1,14 @@
 resolvers ++= Seq(
   Resolver.mavenLocal,
   Resolver.sonatypeRepo("releases"),
-  Resolver.sonatypeRepo("snapshots"),
-  Resolver.jcenterRepo
+  Resolver.sonatypeRepo("snapshots")
 )
 
 inThisBuild(
   List(
     scalaVersion := "2.13.3",
     crossScalaVersions := Seq("2.12.12", "2.13.3"),
-    organization := "zio.crew",
+    organization := "hot.crew",
     homepage := Some(url("https://github.com/hot-crew/zio-aws-s3")),
     startYear := Some(2020),
     licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
